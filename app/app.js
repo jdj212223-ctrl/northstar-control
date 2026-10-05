@@ -47,11 +47,11 @@
 
   if (platform === "macOS") {
     document.getElementById("helper-title").textContent = "macOS helper access required";
-    document.getElementById("helper-copy").textContent = "Fan changes need a signed helper installed with your approval. This build does not include that helper.";
+    document.getElementById("helper-copy").textContent = "Install the signed smctl helper to enable fan controls on supported Apple Silicon Macs.";
     document.getElementById("battery-helper-title").textContent = "macOS helper access required";
-    document.getElementById("battery-helper-copy").textContent = "Battery and charging controls require a signed helper and explicit authorization. None is installed.";
+    document.getElementById("battery-helper-copy").textContent = "Install the signed smctl helper to enable charge limits on supported MacBooks.";
     document.getElementById("overclock-note").textContent = "Overclocking is not offered on macOS.";
-    document.getElementById("mac-helper-button").textContent = "About helper access";
+    document.getElementById("mac-helper-button").textContent = "Set up helper";
   } else if (platform === "Windows") {
     document.getElementById("helper-title").textContent = "Windows service required";
     document.getElementById("helper-copy").textContent = "Fan changes need hardware support and an authorized vendor-specific service.";
@@ -77,7 +77,29 @@
 
   navItems.forEach((item) => item.addEventListener("click", () => showView(item.dataset.view)));
   document.querySelectorAll("[data-open]").forEach((button) => button.addEventListener("click", () => showView(button.dataset.open)));
-  document.querySelectorAll(".choice-card").forEach((button) => button.addEventListener("click", requestHardwareAccess));
+  document.querySelectorAll(".choice-card[data-fan]").forEach((button) => button.addEventListener("click", async () => {
+    if (!nativeApp) {
+      openAccessDialog();
+      return;
+    }
+    if (platform !== "macOS") {
+      openAccessDialog();
+      return;
+    }
+    try {
+      const result = await window.northstar.setFanProfile(button.dataset.fan);
+      if (!result.ok) {
+        if (result.reason === "helper-not-installed") openAccessDialog("mac");
+        else if (result.reason !== "cancelled") showToast("Fan control is unavailable for this helper or hardware.");
+        return;
+      }
+      document.querySelectorAll(".choice-card[data-fan]").forEach((choice) => choice.classList.toggle("selected", choice === button));
+      showToast(`${button.dataset.fan} fan profile applied.`);
+      await refreshStatus();
+    } catch {
+      showToast("Could not apply the fan profile.");
+    }
+  }));
 
   function selectProfile(profile) {
     if (!nativeApp) {
@@ -115,13 +137,13 @@
       return;
     }
     if (context === "mac") {
-      modalTitle.textContent = "macOS helper access";
-      modalCopy.textContent = "Fan and battery controls on macOS need a separately installed, correctly signed privileged helper. macOS must show the real authorization prompt as part of that installer flow.";
-      modalPlatformNote.textContent = "No signed helper is bundled with this app build. No privileges are requested and no system settings are changed.";
+      modalTitle.textContent = "Set up the macOS hardware helper";
+      modalCopy.textContent = "Northstar can use smctl's independently signed helper for fan profiles on supported Apple Silicon Macs and charge limits on supported MacBooks. It does not control USB port power.";
+      modalPlatformNote.textContent = "Install with Homebrew, then authorize its helper in Terminal: brew install leaperone/smctl/smctl && sudo smctl daemon install. Northstar does not run privileged installers for you.";
     } else if (platform === "macOS") {
-      modalTitle.textContent = "A clear yes, every time.";
-      modalCopy.textContent = "Fan and battery controls on macOS need a signed helper installed with your approval. This build does not include the signed helper, so it cannot request access or change hardware.";
-      modalPlatformNote.textContent = "A real macOS authorization flow requires Apple's privileged-helper installation and a Developer ID-signed app.";
+      modalTitle.textContent = "Hardware helper setup";
+      modalCopy.textContent = "Use Set up helper for the signed smctl installation steps. Only Mac models reported as supported by the helper can change fan or charging behavior.";
+      modalPlatformNote.textContent = "Fan, battery, and USB controls are not universal macOS features. Northstar does not request access for unsupported hardware.";
     } else if (platform === "Windows") {
       modalTitle.textContent = "Hardware access needs your approval.";
       modalCopy.textContent = "Fan, battery, and USB power controls require supported hardware and an authorized service. This build does not install a service.";
@@ -151,9 +173,9 @@
 
   document.getElementById("connection-action").addEventListener("click", () => openAccessDialog());
   document.getElementById("help-button").addEventListener("click", () => openAccessDialog());
-  document.getElementById("helper-button").addEventListener("click", () => openAccessDialog());
+  document.getElementById("helper-button").addEventListener("click", () => openAccessDialog(platform === "macOS" ? "mac" : "general"));
   document.getElementById("mac-helper-button").addEventListener("click", () => openAccessDialog("mac"));
-  document.querySelectorAll("[data-helper]").forEach((button) => button.addEventListener("click", () => openAccessDialog()));
+  document.querySelectorAll("[data-helper]").forEach((button) => button.addEventListener("click", () => openAccessDialog(platform === "macOS" ? "mac" : "general")));
   document.getElementById("modal-close").addEventListener("click", closeAccessDialog);
   document.getElementById("modal-cancel").addEventListener("click", closeAccessDialog);
   document.getElementById("modal-confirm").addEventListener("click", closeAccessDialog);
@@ -472,10 +494,31 @@
     if (status.temperatureC !== null) addHistoryPoint(temperatureHistory, status.temperatureC, 1800000);
     updateHistoryPath(temperatureHistory, "temperature-line", "temperature-fill", 320, 42, 1800000, 20, 100);
 
+    const helper = status.hardwareControls;
+    const macFanAvailable = platform !== "macOS" || !helper?.installed || (helper.daemonAvailable && helper.fanAvailable);
+    document.querySelector("#view-cooling .demo-chip").textContent = platform === "macOS" && helper?.fanAvailable
+      ? "HELPER CONNECTED"
+      : "FAN CONTROL UNAVAILABLE";
     document.getElementById("fan-rpm").textContent = status.fanRpm === null ? "—" : status.fanRpm.toLocaleString();
     document.getElementById("detail-rpm").firstChild.textContent = status.fanRpm === null ? "— " : `${status.fanRpm.toLocaleString()} `;
-    document.getElementById("fan-description").textContent = status.fanRpm === null ? "No fan sensor exposed by this system" : "Detected hardware fan · read only";
-    document.getElementById("detail-fan-description").textContent = status.fanRpm === null ? "Fan telemetry unavailable" : "Detected hardware fan · read only";
+    document.getElementById("fan-description").textContent = status.fanRpm === null
+      ? platform === "macOS" && helper?.installed && !helper.daemonAvailable ? "smctl helper installed; daemon is not responding" : "No supported fan sensor exposed by this system"
+      : platform === "macOS" && macFanAvailable ? "Detected fan · smctl helper" : "Detected hardware fan · read only";
+    document.getElementById("detail-fan-description").textContent = status.fanRpm === null ? "Fan telemetry unavailable" : platform === "macOS" ? "Fan telemetry from smctl helper" : "Detected hardware fan · read only";
+    document.querySelectorAll(".choice-card[data-fan]").forEach((choice) => {
+      choice.disabled = !macFanAvailable || (platform === "macOS" && !helper?.daemonAvailable);
+      if (helper?.fanProfile) choice.classList.toggle("selected", choice.dataset.fan.toLowerCase() === helper.fanProfile.toLowerCase());
+    });
+    const helperButton = document.getElementById("helper-button");
+    if (platform === "macOS") {
+      document.getElementById("helper-title").textContent = helper?.installed
+        ? helper.daemonAvailable ? "macOS helper connected" : "macOS helper needs authorization"
+        : "macOS helper setup";
+      document.getElementById("helper-copy").textContent = helper?.installed
+        ? helper.daemonAvailable ? "Fan access is available where supported by this Mac." : "Run sudo smctl daemon install in Terminal to authorize and start the helper."
+        : "Install the signed smctl helper to enable supported fan controls.";
+      helperButton.textContent = helper?.installed && helper.daemonAvailable ? "Helper ready" : "Setup steps";
+    }
     document.getElementById("battery-percent").textContent = status.battery ? String(status.battery.percent) : "—";
     document.getElementById("battery-status").textContent = status.battery ? status.battery.status : "Battery telemetry unavailable";
     document.getElementById("battery-description").textContent = status.battery ? "Live battery charge level" : "Battery telemetry unavailable";
@@ -504,11 +547,16 @@
       document.querySelectorAll(".profile-option").forEach((option) => option.classList.toggle("selected", option.dataset.profile === status.powerProfile.current));
     }
     const chargeSetting = document.querySelector('[data-setting="chargeLimit"]');
+    chargeSetting.disabled = platform === "macOS" && helper?.installed && !helper.chargeLimitAvailable;
     chargeSetting.checked = Boolean(status.writableChargeLimit && status.chargeLimit !== null && status.chargeLimit < 100);
     document.getElementById("battery-helper-copy").textContent = status.writableChargeLimit
       ? `Current limit: ${status.chargeLimit}%. The operating system exposes a writable charge threshold.`
       : platform === "macOS"
-        ? "Battery controls on macOS need a signed helper. This build does not include that helper."
+        ? helper?.chargeLimitAvailable
+          ? "The signed helper reports charge-limit support for this Mac."
+          : helper?.installed
+            ? "No supported battery charge control was reported. This may be a desktop Mac or an unsupported MacBook."
+            : "Install the signed smctl helper. Charge limits are available only on supported MacBooks."
         : "This system does not expose a writable battery charge limit to this app.";
     document.getElementById("updated-label").textContent = `Live · ${new Date().toLocaleTimeString()}`;
   }
@@ -619,8 +667,8 @@
       window.northstar.setChargeLimit(enabled).then(async (result) => {
         if (!result.ok) {
           input.checked = !enabled;
-          if (result.reason !== "invalid-setting") requestHardwareAccess();
-          else showToast("This system does not expose a writable battery charge limit.");
+          if (result.reason === "helper-not-installed") openAccessDialog("mac");
+          else if (result.reason !== "cancelled") showToast("This system does not expose a supported writable battery charge limit.");
           return;
         }
         await refreshStatus();

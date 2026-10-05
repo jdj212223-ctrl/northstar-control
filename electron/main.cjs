@@ -11,6 +11,7 @@ const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 const { createGitHubAuth } = require("./github-auth.cjs");
 const { createRemoteAgent } = require("./remote-agent.cjs");
+const { createMacHardwareHelper } = require("./mac-hardware-helper.cjs");
 
 const execFileAsync = promisify(execFile);
 const powerPlanIds = Object.freeze({
@@ -257,11 +258,15 @@ async function cpuLoadPercent() {
 }
 
 async function getSystemStatus() {
-  const [battery, sensors, powerProfile, cpuLoad] = await Promise.all([
+  const macHelper = createMacHardwareHelper();
+  const [battery, sensors, powerProfile, cpuLoad, hardwareControls] = await Promise.all([
     readBattery(),
     process.platform === "linux" ? readLinuxSensors() : Promise.resolve({ temperatureC: null, temperatureSource: null, fanRpm: null, chargeLimit: null, writableChargeLimit: false }),
     readPowerProfile(),
-    cpuLoadPercent()
+    cpuLoadPercent(),
+    process.platform === "darwin"
+      ? macHelper.getStatus()
+      : Promise.resolve({ installed: false, daemonAvailable: false, fanAvailable: false, chargeLimitAvailable: false, fanRpm: null, chargeLimit: null })
   ]);
   return {
     platform: platformName(),
@@ -273,9 +278,10 @@ async function getSystemStatus() {
     memoryFreeBytes: os.freemem(),
     battery,
     temperatureC: sensors.temperatureC,
-    fanRpm: sensors.fanRpm,
-    chargeLimit: sensors.chargeLimit,
-    writableChargeLimit: sensors.writableChargeLimit,
+    fanRpm: hardwareControls.fanRpm ?? sensors.fanRpm,
+    chargeLimit: hardwareControls.chargeLimit ?? sensors.chargeLimit,
+    writableChargeLimit: hardwareControls.chargeLimitAvailable || sensors.writableChargeLimit,
+    hardwareControls,
     powerProfile
   };
 }
@@ -350,6 +356,17 @@ async function setPowerProfile(profile) {
 
 async function setChargeLimit(enabled) {
   if (typeof enabled !== "boolean") return { ok: false, reason: "invalid-setting" };
+  if (process.platform === "darwin") {
+    const helper = createMacHardwareHelper();
+    const status = await helper.getStatus();
+    if (!status.chargeLimitAvailable) return { ok: false, reason: status.installed ? "helper-or-hardware-unavailable" : "helper-not-installed" };
+    const confirmed = await confirmHardwareChange(
+      "Change battery charge limit?",
+      enabled ? "Keep this MacBook's battery near 80% while connected to power?" : "Return battery charging to normal macOS control?"
+    );
+    if (!confirmed) return { ok: false, reason: "cancelled" };
+    return helper.setChargeLimit(enabled);
+  }
   if (process.platform !== "linux") return { ok: false, reason: "unsupported" };
   let supplies;
   try {
@@ -373,6 +390,34 @@ async function setChargeLimit(enabled) {
   return { ok: false, reason: "helper-or-hardware-required" };
 }
 
+async function confirmHardwareChange(message, detail) {
+  const result = await dialog.showMessageBox({
+    type: "warning",
+    title: "Confirm hardware change",
+    message,
+    detail,
+    buttons: ["Cancel", "Apply"],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true
+  });
+  return result.response === 1;
+}
+
+async function setFanProfile(profile) {
+  if (!["Auto", "Quiet", "Cool"].includes(profile)) return { ok: false, reason: "invalid-profile" };
+  if (process.platform !== "darwin") return { ok: false, reason: "unsupported" };
+  const helper = createMacHardwareHelper();
+  const status = await helper.getStatus();
+  if (!status.fanAvailable) return { ok: false, reason: status.installed ? "helper-or-hardware-unavailable" : "helper-not-installed" };
+  const confirmed = await confirmHardwareChange(
+    `Apply ${profile.toLowerCase()} fan profile?`,
+    "Fan behavior is hardware-dependent. You can restore automatic fan control at any time."
+  );
+  if (!confirmed) return { ok: false, reason: "cancelled" };
+  return helper.setFanProfile(profile);
+}
+
 function registerIpc() {
   function assertLocalRenderer(event) {
     const expected = pathToFileURL(path.join(__dirname, "..", "app", "index.html")).href;
@@ -382,14 +427,15 @@ function registerIpc() {
   ipcMain.handle("system:devices", (event) => { assertLocalRenderer(event); return getDevices(); });
   ipcMain.handle("system:set-power-profile", (event, profile) => { assertLocalRenderer(event); return setPowerProfile(profile); });
   ipcMain.handle("system:set-charge-limit", (event, enabled) => { assertLocalRenderer(event); return setChargeLimit(enabled); });
+  ipcMain.handle("system:set-fan-profile", (event, profile) => { assertLocalRenderer(event); return setFanProfile(profile); });
   ipcMain.handle("system:request-hardware-access", async (event) => {
     assertLocalRenderer(event);
     if (process.platform === "darwin") {
       await dialog.showMessageBox({
         type: "info",
         title: "Northstar Control needs a Mac helper",
-        message: "The signed privileged helper is not installed.",
-        detail: "Fan and battery controls on macOS require an Apple-authorized helper installation. This build does not contain that signed helper, so macOS access cannot be requested from this app yet.",
+        message: "Set up the optional macOS hardware helper.",
+        detail: "For supported Apple Silicon Macs, install the independently signed helper with `brew install leaperone/smctl/smctl`, then authorize it using `sudo smctl daemon install` in Terminal. USB port power is not supported.",
         buttons: ["OK"],
         noLink: true
       });
@@ -485,4 +531,4 @@ if (isElectron) {
   app.on("before-quit", () => remoteAgent?.stop());
 }
 
-module.exports = { getSystemStatus, getDevices, setPowerProfile, setChargeLimit };
+module.exports = { getSystemStatus, getDevices, setPowerProfile, setChargeLimit, setFanProfile };

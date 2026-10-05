@@ -25,15 +25,31 @@ remain unavailable.
   from permission to control the local computer.
 
 Controls and readings the host cannot provide are shown as unavailable; the app
-does not simulate sensor values or silently elevate privileges. Fan-speed
-changes, USB power switching, and overclocking are not enabled because they
-require hardware-specific drivers and safety limits. GPU load and battery
-health are unavailable until reliable platform APIs are supported.
+does not simulate sensor values or silently elevate privileges. On Apple
+Silicon, fan profiles can use the optional signed `smctl` helper on supported
+models; MacBook charge limits are exposed only when the helper reports charging
+control support. Linux charge thresholds are available when writable sysfs
+controls exist. Fan controls on Windows and Linux, USB power switching, and
+overclocking are not enabled because they require validated hardware-specific
+drivers and safety limits. GPU load and battery health are unavailable until
+reliable platform APIs are supported.
 
-On macOS, fan and battery control would require a separately signed and
-notarized privileged helper installed through Apple's authorization flow. No
-helper or signing identity is included, so the app does not present a fake
-permission prompt. macOS power modes remain managed by macOS.
+On Apple Silicon macOS, optional fan profiles and MacBook charge limits can use
+the independently signed and notarized `smctl` helper. Install it separately
+with Homebrew, then authorize its LaunchDaemon from Terminal:
+
+```sh
+brew install leaperone/smctl/smctl
+sudo smctl daemon install
+```
+
+Northstar detects the helper and asks for confirmation before changing fan or
+charging behavior. The helper supports only hardware it reports as capable;
+desktop Macs have no battery charge-limit control. Northstar does not bundle
+the helper or run privileged installers. USB port power control is not
+available through this integration. Windows and Linux fan/USB helper controls
+remain unavailable unless the operating system and hardware expose a validated
+control interface.
 
 ## Run locally
 

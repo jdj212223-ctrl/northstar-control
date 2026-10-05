@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("northstar", Object.freeze({
   getDevices: () => ipcRenderer.invoke("system:devices"),
   setPowerProfile: (profile) => ipcRenderer.invoke("system:set-power-profile", profile),
   setChargeLimit: (enabled) => ipcRenderer.invoke("system:set-charge-limit", enabled),
+  setFanProfile: (profile) => ipcRenderer.invoke("system:set-fan-profile", profile),
   requestHardwareAccess: () => ipcRenderer.invoke("system:request-hardware-access"),
   remote: Object.freeze({
     getStatus: () => ipcRenderer.invoke("remote:status"),
