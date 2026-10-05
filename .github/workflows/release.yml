@@ -35,7 +35,7 @@ jobs:
       - name: Check out release
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_tag || github.ref }}
+          ref: ${{ inputs.release_tag && github.sha || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -60,7 +60,7 @@ jobs:
         run: npm run check
 
       - name: Build installers
-        run: npm run ${{ matrix.script }} -- --publish never
+        run: npm run ${{ matrix.script }}
 
       - name: Upload installers
         uses: actions/upload-artifact@v4

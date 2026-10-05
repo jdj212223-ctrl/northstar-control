@@ -14,9 +14,9 @@
     "serve": "node server/index.cjs",
     "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/remote-agent.cjs && node --check electron/mac-hardware-helper.cjs && node --check server/index.cjs && node --check app/app.js && node --check docs/site.js",
     "test": "node --test",
-    "package:mac": "electron-builder --mac --universal",
-    "package:windows": "electron-builder --win",
-    "package:linux": "electron-builder --linux"
+    "package:mac": "electron-builder --mac --universal --publish never",
+    "package:windows": "electron-builder --win --publish never",
+    "package:linux": "electron-builder --linux --publish never"
   },
   "devDependencies": {
     "electron": "44.5.1",
