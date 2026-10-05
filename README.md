@@ -138,6 +138,7 @@ connections.
    The service listens on port `8787` by default; set `PORT` if the host
    requires a different port. Keep the SQLite directory on persistent storage
    and out of source control.
+
 3. Put the service behind HTTPS and a TLS-terminating reverse proxy before
    exposing it publicly. Configure the website's **Remote service** URL to the
    HTTPS service origin. The static site stores that URL only in browser
@@ -147,6 +148,34 @@ connections.
 4. Sign in on the site, generate a one-time pairing code, then enter the
    service URL and code in Northstar Control's Settings on the target computer.
    The pairing code expires after five minutes and is single-use.
+
+### Run the backend in Docker
+
+The repository includes a production Dockerfile for the login and device API.
+Build it from the repository root:
+
+```sh
+docker build -t northstar-control-api .
+```
+
+Run a single instance with a persistent Docker volume. Replace the Client ID
+with the public ID from the GitHub OAuth App; do not use a client secret.
+
+```sh
+docker volume create northstar-control-data
+docker run --detach --name northstar-control-api --restart unless-stopped \
+  --publish 8787:8787 \
+  --env GITHUB_CLIENT_ID=your_public_client_id \
+  --env NORTHSTAR_ALLOWED_ORIGINS=https://jdj212223-ctrl.github.io \
+  --mount source=northstar-control-data,target=/data \
+  northstar-control-api
+```
+
+Put the container behind an HTTPS reverse proxy that supports WebSocket
+upgrades, then set its HTTPS origin in the dashboard's Account & settings.
+Keep the container on one instance: sessions, pending login flows, and live
+WebSocket connections are held in memory. The container health check uses
+`/health`; the mounted `/data` volume retains device records across restarts.
 
 The server holds only an in-memory website session and GitHub identity; GitHub
 access tokens are used to read the profile and then discarded. Website sessions

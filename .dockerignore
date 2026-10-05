@@ -1,0 +1,16 @@
+.git
+.github
+.DS_Store
+.env
+.env.*
+node_modules
+build
+dist
+docs
+app
+electron
+tests
+server-data
+NORTHSTAR-LINUX.md
+build.sh
+build-lfs.sh
