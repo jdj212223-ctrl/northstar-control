@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to build and publish
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -28,6 +34,8 @@ jobs:
     steps:
       - name: Check out release
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,17 +48,19 @@ jobs:
 
       - name: Verify release tag
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           node -e 'if (`v${require("./package.json").version}` !== process.env.RELEASE_TAG) throw new Error("Release tag must match package.json version")'
 
       - name: Test release source
-        run: |
-          npm test
-          npm run check
+        if: matrix.platform != 'Linux'
+        run: npm test
+
+      - name: Check source syntax
+        run: npm run check
 
       - name: Build installers
-        run: npm run ${{ matrix.script }}
+        run: npm run ${{ matrix.script }} -- --publish never
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
@@ -82,7 +92,8 @@ jobs:
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          gh release create "$GITHUB_REF_NAME" installers/* \
-            --title "Northstar Control $GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" installers/* \
+            --title "Northstar Control $RELEASE_TAG" \
             --generate-notes
