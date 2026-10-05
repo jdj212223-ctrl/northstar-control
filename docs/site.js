@@ -96,6 +96,16 @@
     }
   }
 
+  function remoteServiceError(error) {
+    if (error instanceof TypeError || error?.name === "NetworkError") {
+      const isLocal = apiBase && ["localhost", "127.0.0.1", "[::1]"].includes(new URL(apiBase).hostname);
+      return isLocal
+        ? `Cannot reach the Northstar service at ${apiBase}. Start it with PORT=18878 NORTHSTAR_ALLOWED_ORIGINS=http://localhost:18879 npm run serve, or set the URL to a running HTTPS backend.`
+        : `Cannot reach the Northstar service at ${apiBase}. Check that it is running, uses HTTPS, and allows this website origin in NORTHSTAR_ALLOWED_ORIGINS.`;
+    }
+    return error.message;
+  }
+
   async function apiRequest(route, { method = "GET", body, requireCsrf = method !== "GET" } = {}) {
     if (!apiBase) throw new Error("Set the remote-service URL first.");
     const headers = { Accept: "application/json" };
@@ -188,11 +198,12 @@
       account = null;
       csrfToken = "";
       updateAccountUI();
-      apiStatus.textContent = `Could not connect to the remote service: ${error.message}`;
+      const message = remoteServiceError(error);
+      apiStatus.textContent = message;
       document.getElementById("remote-connection-title").textContent = "Remote service is unavailable";
-      document.getElementById("remote-connection-copy").textContent = error.message;
+      document.getElementById("remote-connection-copy").textContent = message;
       document.getElementById("device-connection-title").textContent = "Remote service connection failed";
-      document.getElementById("device-connection-copy").textContent = error.message;
+      document.getElementById("device-connection-copy").textContent = message;
     }
   }
 
@@ -253,7 +264,11 @@
         document.getElementById("web-device-status").textContent = "The code expired. Start sign-in again.";
       }, flow.expiresIn * 1000);
     } catch (error) {
-      status.textContent = `Could not start GitHub sign-in: ${error.message}`;
+      const message = remoteServiceError(error);
+      status.textContent = message;
+      apiStatus.textContent = message;
+      document.getElementById("remote-connection-title").textContent = "Remote service is unavailable";
+      document.getElementById("remote-connection-copy").textContent = message;
     } finally {
       button.disabled = false;
     }
