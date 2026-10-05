@@ -1,0 +1,55 @@
+{
+  "name": "northstar-control",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Northstar contributors",
+  "license": "MIT",
+  "description": "Cross-platform desktop hardware monitor and power control",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check app/app.js",
+    "test": "node --test",
+    "package:mac": "electron-builder --mac --universal",
+    "package:windows": "electron-builder --win",
+    "package:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "org.northstar.control",
+    "productName": "Northstar Control",
+    "directories": {
+      "output": "build/desktop"
+    },
+    "files": [
+      "app/**/*",
+      "electron/**/*",
+      "package.json",
+      "LICENSE",
+      "README.md",
+      "CONTRIBUTING.md"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "System;Utility"
+    }
+  }
+}

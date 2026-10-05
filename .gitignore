@@ -1,0 +1,5 @@
+/dist/
+/build/
+/.northstar-build/
+/node_modules/
+/.DS_Store

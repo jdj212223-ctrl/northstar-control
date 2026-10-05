@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0c0e13">
+    <meta name="description" content="Northstar Control — one calm, safe place to understand and tune your computer.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'">
+    <title>Northstar Control</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Northstar Control home">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span class="brand-name">northstar<span>control</span></span>
+        </a>
+
+        <div class="nav-label">WORKSPACE</div>
+        <nav class="primary-nav" aria-label="Main navigation">
+          <button class="nav-item active" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
+          <button class="nav-item" data-view="cooling"><span class="nav-icon">◌</span>Cooling<span class="nav-badge">3</span></button>
+          <button class="nav-item" data-view="power"><span class="nav-icon">ϟ</span>Power &amp; battery</button>
+          <button class="nav-item" data-view="performance"><span class="nav-icon">⌁</span>Performance</button>
+          <button class="nav-item" data-view="devices"><span class="nav-icon">⠿</span>Devices &amp; USB</button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+        <div class="connection-card">
+          <div class="connection-top"><span class="status-dot"></span><span id="connection-label">Connecting…</span><span class="info-mark" title="Hardware features depend on system and device support.">i</span></div>
+          <p>Only controls supported by your operating system are available.</p>
+          <button class="text-button" id="connection-action">About hardware access <span>↗</span></button>
+        </div>
+        <button class="nav-item settings-link" data-view="settings"><span class="nav-icon">⚙</span>Settings</button>
+        <div class="profile-row">
+          <div class="avatar" id="sidebar-account-avatar">N</div>
+          <div><strong id="sidebar-account-name">Local profile</strong><span id="sidebar-account-detail">GitHub not connected</span></div>
+          <button class="profile-more" data-view="settings" aria-label="GitHub account settings">•••</button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-current">Overview</strong></div>
+          <div class="topbar-right">
+            <span class="preview-pill"><span></span><span id="app-state">CONNECTING</span></span>
+            <button class="icon-button" id="help-button" aria-label="Help">?</button>
+            <div class="top-avatar">N</div>
+          </div>
+        </header>
+
+        <section class="page-view active" id="view-overview">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow"><span class="eyebrow-line"></span> <span id="current-date"></span></div>
+              <h1>Your system, <em>in balance.</em></h1>
+              <p class="page-subtitle">A clear view of what your hardware is doing right now.</p>
+            </div>
+            <button class="button button-secondary" id="refresh-button"><span class="refresh-icon">↻</span> Refresh status</button>
+          </div>
+
+          <div class="system-strip">
+            <div class="system-chip"><span class="device-icon">▰</span><div><strong id="device-name">Your computer</strong><span id="platform-name">Detecting platform…</span></div></div>
+            <div class="strip-divider"></div>
+            <div class="system-metric"><span>UPTIME</span><strong id="uptime-value">—</strong></div>
+            <div class="strip-divider"></div>
+            <div class="system-metric"><span>PROFILE</span><strong class="profile-value"><i></i><span id="profile-name">Balanced</span></strong></div>
+            <button class="strip-edit" id="profile-button" aria-label="Change power profile">⌄</button>
+          </div>
+
+          <div class="section-heading">
+            <div><h2>At a glance</h2><span class="section-caption">Live system data · unavailable sensors are left blank</span></div>
+            <span class="last-updated" id="updated-label">Updated just now</span>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card temperature-card">
+              <div class="card-heading"><span>THERMALS</span><span class="card-icon orange">◉</span></div>
+              <div class="metric-main"><strong id="cpu-temperature-value">—<span>°</span></strong><span class="metric-unit">C</span><span class="metric-state safe-state"><i></i>Live</span></div>
+              <div class="metric-description" id="temperature-description">CPU temperature unavailable</div>
+              <div class="sparkline spark-orange" aria-label="Live temperature history"><svg viewBox="0 0 320 42" preserveAspectRatio="none"><path class="spark-fill" id="temperature-fill"></path><path class="spark-line" id="temperature-line"></path></svg></div>
+              <div class="chart-axis"><span>HISTORY</span><span>NOW</span></div>
+            </article>
+
+            <article class="metric-card fan-card">
+              <div class="card-heading"><span>COOLING</span><span class="card-icon blue">◌</span></div>
+              <div class="metric-main"><strong id="fan-rpm">—</strong><span class="metric-unit">RPM</span><span class="metric-state quiet-state"><i></i>Read only</span></div>
+              <div class="metric-description" id="fan-description">Fan telemetry unavailable</div>
+              <div class="fan-visual" aria-hidden="true"><div class="fan-ring"><div class="fan-blades"></div><div class="fan-hub"></div></div><div class="fan-wave wave-one"></div><div class="fan-wave wave-two"></div></div>
+              <button class="card-link" data-open="cooling">Manage cooling <span>→</span></button>
+            </article>
+
+            <article class="metric-card battery-card">
+              <div class="card-heading"><span>BATTERY</span><span class="card-icon green">ϟ</span></div>
+              <div class="battery-level"><strong id="battery-percent">—</strong><span>%</span><div class="battery-case"><div></div></div></div>
+              <div class="metric-description" id="battery-description">Battery telemetry unavailable</div>
+              <div class="battery-footer"><span class="charging-dot"></span> <span id="battery-status">Status unavailable</span><span class="footer-spacer"></span><span>Health <b id="battery-health">Unavailable</b></span></div>
+            </article>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel performance-panel">
+              <div class="panel-heading"><div><h2>Performance</h2><p>Live processor and memory usage.</p></div><button class="more-button" aria-label="Performance options" data-helper>•••</button></div>
+              <div class="performance-stats">
+                <div class="stat-block"><span>CPU LOAD</span><strong id="cpu-load">—<small>%</small></strong><div class="meter"><i id="cpu-meter" style="width:0%"></i></div></div>
+                <div class="stat-block"><span>MEMORY</span><strong id="memory-use">—<small> / — GB</small></strong><div class="meter memory-meter"><i id="memory-meter" style="width:0%"></i></div></div>
+                <div class="stat-block"><span>GPU LOAD</span><strong>—<small>unavailable</small></strong><div class="meter gpu-meter"><i style="width:0%"></i></div></div>
+              </div>
+              <div class="panel-divider"></div>
+              <div class="profile-callout"><div class="profile-orbit">✳</div><div><strong id="active-profile-title">System power profile</strong><span>Available modes depend on your operating system.</span></div><button class="button button-small" id="profile-button-bottom">Change profile</button></div>
+              <p class="platform-note" id="overclock-note">Clock tuning is restricted to Windows and Linux devices with validated hardware support.</p>
+            </section>
+
+            <section class="panel activity-panel">
+              <div class="panel-heading"><div><h2>System activity</h2><p>A little context goes a long way.</p></div><button class="more-button" aria-label="Activity options">•••</button></div>
+              <div class="activity-chart">
+                <div class="chart-y-axis"><span>100%</span><span>50%</span><span>0%</span></div>
+                <div class="chart-plot"><div class="grid-line line-top"></div><div class="grid-line line-mid"></div><div class="grid-line line-bottom"></div><svg viewBox="0 0 390 128" preserveAspectRatio="none" aria-label="Live CPU and memory activity"><defs><linearGradient id="cpu-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#d7fa76" stop-opacity=".18"/><stop offset="1" stop-color="#d7fa76" stop-opacity="0"/></linearGradient></defs><path class="activity-area" id="cpu-activity-fill"></path><path class="activity-cpu" id="cpu-activity-line"></path><path class="activity-gpu" id="memory-activity-line"></path></svg><div class="chart-x-axis"><span>EARLIER</span><span>RECENT</span><span>NOW</span></div></div>
+              </div>
+              <div class="chart-legend"><span><i class="legend-cpu"></i>CPU</span><span><i class="legend-gpu"></i>MEMORY</span><span class="sample-label">COLLECTING</span></div>
+            </section>
+          </div>
+
+          <div class="bottom-row">
+            <section class="usb-panel panel">
+              <div class="usb-symbol">⌁</div>
+              <div class="usb-copy"><strong>USB &amp; connected devices</strong><span>Power controls vary by device and platform.</span></div>
+              <span class="device-count" id="overview-device-count">— DEVICES</span>
+              <button class="arrow-button" data-open="devices" aria-label="Open device controls">→</button>
+            </section>
+            <div class="safety-note"><span>◇</span><p><strong>Your hardware, your call.</strong> Changes are never applied without your approval.</p></div>
+          </div>
+        </section>
+
+        <section class="page-view detail-view" id="view-cooling">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> THERMAL MANAGEMENT</div><h1>Keep your cool.</h1><p class="page-subtitle">Live temperatures and fan telemetry where supported.</p></div><span class="demo-chip">FAN CONTROL UNAVAILABLE</span></div>
+          <div class="detail-grid">
+            <section class="panel detail-primary"><div class="panel-heading"><div><h2>Fan control</h2><p>Hardware-specific controls require a signed system service.</p></div><span class="icon-disc blue-disc">◌</span></div>
+              <div class="fan-reading"><div class="fan-visual large-fan" aria-hidden="true"><div class="fan-ring"><div class="fan-blades"></div><div class="fan-hub"></div></div></div><div><strong id="detail-rpm">— <small>RPM</small></strong><span id="detail-fan-description">Fan telemetry unavailable</span></div></div>
+              <div class="setting-label"><div><strong>Cooling profile</strong><span>Choose the response that suits your day.</span></div></div>
+              <div class="choice-grid" id="fan-choices"><button class="choice-card selected" data-fan="Auto"><span>◌</span><strong>Auto</strong><small>Follow a safe curve</small></button><button class="choice-card" data-fan="Quiet"><span>◖</span><strong>Quiet</strong><small>Lower fan noise</small></button><button class="choice-card" data-fan="Cool"><span>✳</span><strong>Cool</strong><small>Earlier fan response</small></button></div>
+              <div class="helper-banner"><span class="helper-icon">⌑</span><div><strong id="helper-title">Hardware service required</strong><p id="helper-copy">Fan changes need supported hardware and an authorized platform service.</p></div><button class="button button-secondary" id="helper-button">Request access</button></div>
+            </section>
+            <section class="panel temp-panel"><div class="panel-heading"><div><h2>Temperature</h2><p>Detected system sensors</p></div></div><div class="temp-row"><span class="sensor-icon">◉</span><div class="sensor-copy"><strong>CPU / system thermal zone</strong><span>Sensor availability varies by OS</span></div><strong class="sensor-temp" id="detail-temperature">—<small>°C</small></strong><div class="sensor-bar"><i id="temperature-meter" style="width:0%"></i></div></div><div class="thermal-footnote"><span>ⓘ</span> Missing sensor support means no readings are shown.</div></section>
+          </div>
+        </section>
+
+        <section class="page-view detail-view" id="view-power">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> POWER MANAGEMENT</div><h1>Power, <em>your way.</em></h1><p class="page-subtitle">Battery telemetry and supported system power profiles.</p></div><span class="demo-chip">HARDWARE DEPENDENT</span></div>
+          <div class="detail-grid">
+            <section class="panel detail-primary"><div class="panel-heading"><div><h2>Battery care</h2><p>Charging features are supported only where hardware allows.</p></div><span class="icon-disc green-disc">ϟ</span></div>
+              <div class="battery-large"><div class="battery-case large-battery"><div></div></div><div><strong id="detail-battery-percent">—<span>%</span></strong><span id="detail-battery-status">Battery status unavailable</span></div><span class="health-pill" id="detail-battery-health">NOT REPORTED</span></div>
+              <div class="panel-divider"></div><div class="setting-row"><div><strong>Charge limit</strong><span>Set an 80% limit only when the system exposes a writable control.</span></div><label class="switch"><input type="checkbox" data-setting="chargeLimit"><span></span></label></div><div class="helper-banner"><span class="helper-icon">⌑</span><div><strong id="battery-helper-title">Hardware service required</strong><p id="battery-helper-copy">Charge-limit controls are available only on some Linux battery hardware.</p></div><button class="button button-secondary" data-helper>Request access</button></div>
+            </section>
+            <section class="panel"><div class="panel-heading"><div><h2>Power profiles</h2><p>Apply a mode exposed by your operating system.</p></div></div><div class="profile-options"><button class="profile-option selected" data-profile="Balanced"><span class="profile-orbit">✳</span><span><strong>Balanced</strong><small>Everyday system power mode.</small></span><i>✓</i></button><button class="profile-option" data-profile="Efficiency"><span class="profile-orbit efficiency">⌁</span><span><strong>Efficiency</strong><small>Power saver / low power mode.</small></span><i>✓</i></button><button class="profile-option" data-profile="Performance"><span class="profile-orbit performance">↗</span><span><strong>Performance</strong><small>High performance when installed.</small></span><i>✓</i></button></div><p class="fine-print" id="profile-disclaimer">Unavailable modes are reported; changes are sent to the operating system.</p></section>
+          </div>
+        </section>
+
+        <section class="page-view detail-view" id="view-performance">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> SYSTEM PERFORMANCE</div><h1>More headroom. <em>More control.</em></h1><p class="page-subtitle">Live load metrics and supported power profiles.</p></div><span class="demo-chip">SAFE CONTROLS ONLY</span></div>
+          <div class="detail-grid">
+            <section class="panel detail-primary"><div class="panel-heading"><div><h2>Workload profile</h2><p>System power modes depend on your operating system.</p></div><span class="icon-disc">⌁</span></div><div class="profile-options"><button class="profile-option selected" data-profile="Balanced"><span class="profile-orbit">✳</span><span><strong>Balanced</strong><small>Recommended for most tasks.</small></span><i>✓</i></button><button class="profile-option" data-profile="Efficiency"><span class="profile-orbit efficiency">⌁</span><span><strong>Efficiency</strong><small>Prioritize lower power use.</small></span><i>✓</i></button><button class="profile-option" data-profile="Performance"><span class="profile-orbit performance">↗</span><span><strong>Performance</strong><small>Prioritize peak responsiveness.</small></span><i>✓</i></button></div><div class="helper-banner"><span class="helper-icon">⌑</span><div><strong>Advanced system controls are limited</strong><p>Power profiles are applied through the OS where supported. Fan, USB power, and clock tuning need additional hardware-specific services.</p></div><button class="button button-secondary" data-helper>Learn more</button></div></section>
+            <section class="panel overclock-panel"><div class="panel-heading"><div><h2>Clock tuning</h2><p>Windows &amp; Linux only · supported hardware only.</p></div><span class="lock-icon">⌑</span></div><div class="locked-state" id="overclock-locked"><div class="lock-illustration">⌑</div><strong id="overclock-state-title">No validated tuner available</strong><p id="overclock-state-copy">Clock tuning is not exposed without a vendor- and device-specific backend that can enforce thermal, electrical, and stability limits. No clock or voltage changes are made by this app.</p></div><div class="supported-os"><span class="platform-chip win-chip">⊞ Windows</span><span class="platform-chip linux-chip">◈ Linux</span><span>Not available on macOS</span></div></section>
+          </div>
+        </section>
+
+        <section class="page-view detail-view" id="view-devices">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> CONNECTED HARDWARE</div><h1>Devices, at a glance.</h1><p class="page-subtitle">See what's connected. Power control depends on your USB controller.</p></div><span class="demo-chip">SYSTEM DISCOVERY</span></div>
+          <section class="panel devices-panel"><div class="panel-heading"><div><h2>USB devices</h2><p id="device-count">Reading connected devices…</p></div><button class="button button-secondary" id="scan-button">↻ Refresh devices</button></div><div id="device-list" aria-live="polite"><div class="empty-devices">Loading devices from this computer…</div></div><div class="helper-banner"><span class="helper-icon">⌑</span><div><strong>USB power switching is not enabled</strong><p>USB controllers differ. Safe power control needs controller-specific support and authorization.</p></div><button class="button button-secondary" data-helper>Learn more</button></div></section>
+        </section>
+
+        <section class="page-view detail-view" id="view-settings">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> PREFERENCES</div><h1>Settings.</h1><p class="page-subtitle">Control how Northstar Control works on this device.</p></div></div>
+          <section class="panel settings-panel"><div class="panel-heading"><div><h2>Platform &amp; permissions</h2><p>Current system support status</p></div></div><div class="setting-row"><div><strong>Operating system</strong><span id="settings-platform">Detecting…</span></div><span class="settings-value">DETECTED</span></div><div class="setting-row"><div><strong>Hardware service</strong><span>No privileged hardware service is bundled with this app.</span></div><span class="settings-value muted-value">NOT INSTALLED</span></div><div class="setting-row"><div><strong>macOS helper access</strong><span>Fan and battery changes require a signed, user-approved helper.</span></div><button class="button button-secondary" id="mac-helper-button">Learn about access</button></div><div class="setting-row"><div><strong>Windows / Linux clock tuning</strong><span>A validated, hardware-specific tuning driver is not available.</span></div><span class="settings-value muted-value">UNAVAILABLE</span></div></section>
+          <section class="panel settings-panel account-panel">
+            <div class="panel-heading"><div><h2>GitHub account</h2><p>Sign in to link your GitHub identity to this desktop app.</p></div><span class="github-mark" aria-hidden="true">●</span></div>
+            <div class="account-summary"><div class="avatar account-avatar" id="account-avatar">N</div><div class="account-copy"><strong id="account-name">Not connected</strong><span id="account-detail">Your GitHub account is not linked.</span></div><span class="settings-value muted-value" id="account-status">SIGNED OUT</span></div>
+            <div class="account-actions"><button class="button button-primary" id="github-sign-in">Sign in with GitHub</button><button class="button button-secondary" id="github-sign-out" hidden>Sign out</button><span id="github-action-status" role="status" aria-live="polite">GitHub login only identifies your account. It does not grant access to control hardware.</span></div>
+            <div class="github-config">
+              <label for="github-client-id">OAuth App Client ID</label>
+              <div class="client-id-row"><input id="github-client-id" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="128" placeholder="Enter your public GitHub Client ID"><button class="button button-secondary" id="github-save-client-id">Save Client ID</button></div>
+              <p><strong>Homepage URL:</strong> <code>https://github.com/jdj212223-ctrl/northstar-control</code>. The required callback URL is not used by Device Flow, so enter the same URL there. Enable <strong>Device Flow</strong>, and turn off expiring access tokens until token refresh is supported. Only the public Client ID is stored; no client secret is used. <button class="inline-link" id="github-registration-link">Open GitHub Developer Settings ↗</button></p>
+            </div>
+            <div class="account-notice"><span>◇</span><p><strong>Separate from computer permissions.</strong> GitHub sign-in does not grant macOS helper, administrator, battery, fan, or USB access. The app requests only GitHub profile identity.</p></div>
+          </section>
+          <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
+        </section>
+
+        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 0.1</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button class="modal-close" id="modal-close" aria-label="Close dialog">×</button>
+        <div class="modal-icon">⌑</div>
+        <div class="eyebrow"><span class="eyebrow-line"></span> HARDWARE ACCESS</div>
+        <h2 id="modal-title">A clear yes, every time.</h2>
+        <p id="modal-copy">Fan, battery, USB power, and clock controls are device-specific. This build enables only settings supported by the operating system.</p>
+        <div class="modal-platform-note" id="modal-platform-note"></div>
+        <div class="device-flow-panel" id="github-device-panel" hidden><p>On GitHub, sign in and enter this one-time code:</p><code id="github-user-code">----</code><button class="button button-secondary" id="github-open-verification">Open GitHub to authorize</button><span id="github-device-status" role="status" aria-live="polite">Waiting for authorization…</span></div>
+        <div class="modal-actions"><button class="button button-secondary" id="modal-cancel">Got it</button><button class="button button-primary" id="modal-confirm">Understood</button></div>
+        <p class="modal-footnote">No settings were changed.</p>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
