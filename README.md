@@ -3,6 +3,19 @@
 Northstar Control is an open-source desktop app for monitoring a computer and
 using hardware and power controls exposed by its operating system.
 
+## Web dashboard
+
+The static account and computer dashboard is hosted on GitHub Pages:
+<https://jdj212223-ctrl.github.io/northstar-control/>.
+The source is in [`docs/`](./docs/), and the Pages workflow deploys it after
+changes to that folder reach `main`.
+
+This is a static website, not a remote-control service. It does not sign users
+in, list or remove computers, collect telemetry, or send hardware commands.
+Its display preferences stay in the current browser. A real remote management
+service would need to be designed and deployed separately before pairing,
+account-level device removal, or off-device control can work.
+
 ## What it supports
 
 - macOS, Windows, and Linux host monitoring for available CPU, memory, battery,
@@ -78,6 +91,20 @@ rejected.
 GitHub confirms which account is signed in. It does not authorize Northstar
 Control to administer your computer or bypass macOS, Windows, or Linux
 permissions. Hardware access still requires separate local OS authorization.
+
+## Remote access
+
+The desktop app currently reads telemetry and applies supported settings on
+the computer where it is running. The web dashboard does not have a remote
+connection to it. GitHub Pages cannot run the private API, device relay, or
+authentication service required for secure remote access; publishing a web
+page alone cannot make remote fan, clock, battery, or power controls work.
+
+Any future remote-control feature needs an authenticated enrollment flow,
+encrypted device connections, revocation, explicit local approval, and
+hardware-specific safety validation. Do not expose a computer's control
+service directly to the public internet or put account credentials in the
+static site.
 
 ## Contributing
 

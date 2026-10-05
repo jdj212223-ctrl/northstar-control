@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b0d11">
+    <meta name="description" content="Northstar Control web dashboard for your computers, account, and device settings.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'self'">
+    <title>Northstar Control — Your computers</title>
+    <link rel="stylesheet" href="site.css">
+    <script src="site.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#overview" aria-label="Northstar Control overview">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          <span class="brand-name">northstar<span>CONTROL</span></span>
+        </a>
+        <div class="nav-caption">YOUR WORKSPACE</div>
+        <nav class="primary-nav" aria-label="Main navigation">
+          <button class="nav-item active" data-view="overview" aria-current="page"><span>◫</span>Overview</button>
+          <button class="nav-item" data-view="devices"><span>▣</span>Computers <i>0</i></button>
+          <button class="nav-item" data-view="settings"><span>⚙</span>Account &amp; settings</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="local-note">
+            <span class="status-dot"></span>
+            <div><strong>Remote access is off</strong><p>No computers are paired. This site has no connection to your devices.</p></div>
+          </div>
+          <a class="sidebar-link" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">Source code <span>↗</span></a>
+          <div class="profile">
+            <div class="avatar" aria-hidden="true">N</div>
+            <div><strong>Local browser</strong><span>Not signed in</span></div>
+            <button class="more-button" data-view="settings" aria-label="Open account and settings">···</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="menu-button" id="menu-button" aria-label="Open navigation" aria-expanded="false">☰</button>
+          <div class="crumb">Workspace <span>/</span> <strong id="crumb-current">Overview</strong></div>
+          <div class="top-actions">
+            <span class="local-badge"><i></i>LOCAL PREVIEW</span>
+            <a class="icon-button" href="https://github.com/jdj212223-ctrl/northstar-control/issues" target="_blank" rel="noopener noreferrer" aria-label="Help and support">?</a>
+          </div>
+        </header>
+
+        <section class="view active" id="view-overview">
+          <div class="heading-row">
+            <div><div class="eyebrow">NORTHSTAR CONTROL <span>·</span> WEB DASHBOARD</div><h1>Your computers,<br><em>in one place.</em></h1><p class="subtitle">A private control room for your PCs and Macs. Pairing and secure remote access are not available yet.</p></div>
+            <button class="button button-primary" data-view="devices"><span>＋</span> Add a computer</button>
+          </div>
+
+          <div class="notice notice-amber" role="status">
+            <span class="notice-icon">!</span>
+            <div><strong>Remote control is not connected</strong><p>GitHub Pages can host this dashboard, but it cannot securely relay commands. No device telemetry or control requests are sent by this website.</p></div>
+            <a href="https://github.com/jdj212223-ctrl/northstar-control#remote-access" class="text-link">How it works <span>↗</span></a>
+          </div>
+
+          <div class="summary-grid">
+            <article class="summary-card">
+              <div class="summary-top"><span>PAIRED COMPUTERS</span><span class="summary-icon">▣</span></div>
+              <strong class="summary-value">0</strong>
+              <p>No computers connected</p>
+            </article>
+            <article class="summary-card">
+              <div class="summary-top"><span>ONLINE NOW</span><span class="summary-icon green">◉</span></div>
+              <strong class="summary-value">0</strong>
+              <p>Live status needs a secure device service</p>
+            </article>
+            <article class="summary-card">
+              <div class="summary-top"><span>ACCOUNT</span><span class="summary-icon violet">⌂</span></div>
+              <strong class="summary-value value-label">Not signed in</strong>
+              <p>Website account linking is not configured</p>
+            </article>
+          </div>
+
+          <div class="section-heading"><div><h2>Your devices</h2><p>Computers you choose to pair will appear here.</p></div><button class="button button-secondary" data-view="devices">Manage devices <span>→</span></button></div>
+          <div class="empty-card">
+            <div class="empty-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span>✳</span></div>
+            <div class="empty-copy"><div class="eyebrow">NOT PAIRED</div><h2>Your first computer starts here.</h2><p>The desktop app currently manages supported controls on the computer where it is running. Secure remote pairing, an online relay, and web authentication still need to be built.</p><button class="button button-primary" data-view="devices">See pairing status <span>→</span></button></div>
+          </div>
+
+          <div class="section-heading feature-heading"><div><h2>Control, with guardrails</h2><p>Remote controls stay unavailable until the device agent and secure relay exist.</p></div></div>
+          <div class="feature-grid">
+            <article class="feature-card"><span class="feature-icon blue">◌</span><div><strong>Cooling &amp; fans</strong><p>Fan telemetry and speed controls require validated hardware support and an authorized local helper.</p><span class="feature-state">NOT CONNECTED</span></div></article>
+            <article class="feature-card"><span class="feature-icon lime">⌁</span><div><strong>Performance &amp; clocks</strong><p>Overclocking can damage hardware. No clock-tuning service is available or exposed to this website.</p><span class="feature-state">NOT CONNECTED</span></div></article>
+            <article class="feature-card"><span class="feature-icon green">ϟ</span><div><strong>Battery &amp; power</strong><p>Battery telemetry and power-profile changes must be checked and approved by each computer.</p><span class="feature-state">NOT CONNECTED</span></div></article>
+          </div>
+
+          <footer class="footer"><span>Northstar Control · Open source under MIT</span><span>Built to keep your computer <i>yours.</i></span></footer>
+        </section>
+
+        <section class="view" id="view-devices" hidden>
+          <div class="heading-row">
+            <div><div class="eyebrow">YOUR WORKSPACE <span>·</span> DEVICES</div><h1>Computer <em>fleet.</em></h1><p class="subtitle">Pair, check, and manage the computers connected to your account.</p></div>
+            <span class="count-pill"><i></i>0 COMPUTERS</span>
+          </div>
+          <div class="notice notice-amber" role="status"><span class="notice-icon">!</span><div><strong>Pairing is not available yet</strong><p>There is no cloud service or secure computer enrollment flow configured. We won't show fake devices or pretend to send remote commands.</p></div></div>
+          <div class="device-empty panel">
+            <div class="device-outline" aria-hidden="true"><span></span><i></i></div>
+            <div class="eyebrow">NO PAIRED COMPUTERS</div>
+            <h2>Nothing is connected to this account.</h2>
+            <p>Install the desktop app to monitor and control supported features locally. Remote pairing will require a signed-in account, an encrypted device connection, and explicit approval on the computer.</p>
+            <a class="button button-primary" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">Get Northstar Control <span>↗</span></a>
+          </div>
+          <div class="section-heading"><div><h2>Remote access checklist</h2><p>These protections must be in place before a device can be managed here.</p></div></div>
+          <div class="checklist">
+            <div><span class="check-number">01</span><span><strong>Authenticate your account</strong><small>Use a supported sign-in flow; never put a client secret in a public website.</small></span><b>NOT SET UP</b></div>
+            <div><span class="check-number">02</span><span><strong>Pair this computer locally</strong><small>Confirm the pairing code on the device itself before it joins your account.</small></span><b>NOT SET UP</b></div>
+            <div><span class="check-number">03</span><span><strong>Approve individual controls</strong><small>Keep hardware permissions local; sign out and revoke access from the device.</small></span><b>NOT SET UP</b></div>
+          </div>
+          <footer class="footer"><span>Device list is intentionally empty</span><span>No remote control commands are sent</span></footer>
+        </section>
+
+        <section class="view" id="view-settings" hidden>
+          <div class="heading-row">
+            <div><div class="eyebrow">PREFERENCES <span>·</span> ACCOUNT</div><h1>Account &amp; <em>settings.</em></h1><p class="subtitle">Manage this browser's preferences and see your account connection status.</p></div>
+          </div>
+          <div class="notice notice-blue"><span class="notice-icon">i</span><div><strong>No website account is connected</strong><p>This static GitHub Pages site doesn't handle login or store account credentials. Sign-in must be added with a secure authentication and device service.</p></div></div>
+          <div class="settings-layout">
+            <section class="panel settings-panel">
+              <div class="panel-heading"><div><h2>Display preferences</h2><p>Saved only in this browser on this device.</p></div><span class="panel-icon">◐</span></div>
+              <label class="setting-row" for="temperature-unit"><span><strong>Temperature units</strong><small>Choose the units used in device status.</small></span><select id="temperature-unit"><option value="celsius">Celsius (°C)</option><option value="fahrenheit">Fahrenheit (°F)</option></select></label>
+              <label class="setting-row" for="compact-mode"><span><strong>Compact layout</strong><small>Reduce spacing in the dashboard.</small></span><input id="compact-mode" class="toggle" type="checkbox"></label>
+              <label class="setting-row" for="theme-select"><span><strong>Appearance</strong><small>Set a comfortable dashboard theme.</small></span><select id="theme-select"><option value="dark">Midnight</option><option value="light">Daylight</option></select></label>
+              <p class="save-status" id="save-status" role="status" aria-live="polite">Preferences are stored in this browser only.</p>
+            </section>
+            <section class="panel account-panel">
+              <div class="panel-heading"><div><h2>GitHub account</h2><p>Open source project identity—not a connected Northstar account.</p></div><span class="panel-icon">⌂</span></div>
+              <div class="github-card"><div class="github-mark">GH</div><div><strong>jdj212223-ctrl</strong><span>Public GitHub profile</span></div><a href="https://github.com/jdj212223-ctrl" target="_blank" rel="noopener noreferrer" aria-label="Open GitHub profile">↗</a></div>
+              <div class="divider"></div>
+              <p class="small-copy">GitHub sign-in in the desktop app identifies your GitHub profile only. It does not connect computers to this website or grant hardware access.</p>
+              <a class="button button-secondary full-button" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">View project on GitHub <span>↗</span></a>
+            </section>
+          </div>
+          <section class="panel privacy-panel"><span class="privacy-icon">◇</span><div><strong>Your device stays under your control</strong><p>This website stores only display preferences in local browser storage. It does not collect telemetry, store tokens, or send commands to your computers.</p></div></section>
+          <footer class="footer"><span>Preferences are local to this browser</span><button class="danger-link" id="clear-preferences">Reset browser preferences</button></footer>
+        </section>
+      </main>
+    </div>
+    <div class="mobile-scrim" id="mobile-scrim" hidden></div>
+  </body>
+</html>

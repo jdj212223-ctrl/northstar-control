@@ -8,7 +8,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check app/app.js",
+    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check app/app.js && node --check docs/site.js",
     "test": "node --test",
     "package:mac": "electron-builder --mac --universal",
     "package:windows": "electron-builder --win",
