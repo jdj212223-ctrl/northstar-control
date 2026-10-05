@@ -53,7 +53,7 @@ jobs:
           node -e 'if (`v${require("./package.json").version}` !== process.env.RELEASE_TAG) throw new Error("Release tag must match package.json version")'
 
       - name: Test release source
-        if: matrix.platform != 'Linux'
+        if: matrix.platform == 'macOS'
         run: npm test
 
       - name: Check source syntax

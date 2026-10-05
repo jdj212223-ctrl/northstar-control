@@ -58,6 +58,9 @@
     },
     "linux": {
       "icon": "assets/northstar.png",
+      "maintainer": "northstar-control@users.noreply.github.com",
+      "desktopName": "Northstar Control",
+      "syncDesktopName": true,
       "target": [
         "AppImage",
         "deb",
