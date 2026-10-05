@@ -418,6 +418,29 @@ async function setFanProfile(profile) {
   return helper.setFanProfile(profile);
 }
 
+function getMacHelperAccessMessage(status) {
+  if (status.installed && status.daemonAvailable) {
+    const capabilities = [
+      status.fanAvailable ? "Fan telemetry is available." : "This Mac did not report a controllable fan.",
+      status.chargeLimitAvailable ? "Battery charge control is available." : "This Mac did not report battery charge-limit support."
+    ];
+    return {
+      message: "The macOS hardware helper is installed and running.",
+      detail: `${capabilities.join(" ")} USB port power is not supported.`
+    };
+  }
+  if (status.installed) {
+    return {
+      message: "The smctl command is installed, but its helper is not responding.",
+      detail: "Authorize or restart the helper from Terminal with `sudo smctl daemon install`. Northstar does not run privileged installers for you."
+    };
+  }
+  return {
+    message: "The optional macOS hardware helper is not installed.",
+    detail: "For supported Apple Silicon Macs, download the signed smctl release from https://github.com/leaperone/smctl/releases and install its smctl and smctld binaries. Then run `sudo smctl daemon install` in Terminal. The Homebrew formula builds from source and requires the full Xcode app. USB port power is not supported."
+  };
+}
+
 function registerIpc() {
   function assertLocalRenderer(event) {
     const expected = pathToFileURL(path.join(__dirname, "..", "app", "index.html")).href;
@@ -431,15 +454,18 @@ function registerIpc() {
   ipcMain.handle("system:request-hardware-access", async (event) => {
     assertLocalRenderer(event);
     if (process.platform === "darwin") {
+      const helperStatus = await createMacHardwareHelper().getStatus();
+      const helperMessage = getMacHelperAccessMessage(helperStatus);
       await dialog.showMessageBox({
         type: "info",
-        title: "Northstar Control needs a Mac helper",
-        message: "Set up the optional macOS hardware helper.",
-        detail: "For supported Apple Silicon Macs, install the independently signed helper with `brew install leaperone/smctl/smctl`, then authorize it using `sudo smctl daemon install` in Terminal. USB port power is not supported.",
+        title: "macOS hardware helper status",
+        ...helperMessage,
         buttons: ["OK"],
         noLink: true
       });
-      return { ok: false, reason: "signed-macos-helper-not-installed" };
+      return helperStatus.daemonAvailable
+        ? { ok: true }
+        : { ok: false, reason: "macos-helper-not-ready" };
     }
     await dialog.showMessageBox({
       type: "info",
@@ -531,4 +557,4 @@ if (isElectron) {
   app.on("before-quit", () => remoteAgent?.stop());
 }
 
-module.exports = { getSystemStatus, getDevices, setPowerProfile, setChargeLimit, setFanProfile };
+module.exports = { getSystemStatus, getDevices, setPowerProfile, setChargeLimit, setFanProfile, getMacHelperAccessMessage };

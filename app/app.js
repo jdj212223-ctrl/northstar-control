@@ -137,9 +137,9 @@
       return;
     }
     if (context === "mac") {
-      modalTitle.textContent = "Set up the macOS hardware helper";
+      modalTitle.textContent = "macOS hardware helper setup";
       modalCopy.textContent = "Northstar can use smctl's independently signed helper for fan profiles on supported Apple Silicon Macs and charge limits on supported MacBooks. It does not control USB port power.";
-      modalPlatformNote.textContent = "Install with Homebrew, then authorize its helper in Terminal: brew install leaperone/smctl/smctl && sudo smctl daemon install. Northstar does not run privileged installers for you.";
+      modalPlatformNote.textContent = "Download the signed helper from https://github.com/leaperone/smctl/releases, install smctl and smctld, then run sudo smctl daemon install in Terminal. Homebrew builds from source and requires the full Xcode app. Open the desktop app to see whether a helper is already active.";
     } else if (platform === "macOS") {
       modalTitle.textContent = "Hardware helper setup";
       modalCopy.textContent = "Use Set up helper for the signed smctl installation steps. Only Mac models reported as supported by the helper can change fan or charging behavior.";

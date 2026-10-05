@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { getDevices, getSystemStatus, setChargeLimit, setPowerProfile } = require("../electron/main.cjs");
+const { getDevices, getMacHelperAccessMessage, getSystemStatus, setChargeLimit, setPowerProfile } = require("../electron/main.cjs");
 
 test("system status uses actual host telemetry with explicit unavailable values", async () => {
   const status = await getSystemStatus();
@@ -31,4 +31,23 @@ test("USB enumeration returns only named host devices", async () => {
 test("unsupported or malformed control requests fail without touching hardware", async () => {
   assert.deepEqual(await setPowerProfile("Unrestricted"), { ok: false, reason: "invalid-profile" });
   assert.deepEqual(await setChargeLimit("80"), { ok: false, reason: "invalid-setting" });
+});
+
+test("macOS helper status dialog reflects installed capabilities instead of repeating setup steps", () => {
+  assert.deepEqual(getMacHelperAccessMessage({
+    installed: true,
+    daemonAvailable: true,
+    fanAvailable: true,
+    chargeLimitAvailable: false
+  }), {
+    message: "The macOS hardware helper is installed and running.",
+    detail: "Fan telemetry is available. This Mac did not report battery charge-limit support. USB port power is not supported."
+  });
+
+  assert.match(getMacHelperAccessMessage({
+    installed: false,
+    daemonAvailable: false,
+    fanAvailable: false,
+    chargeLimitAvailable: false
+  }).detail, /Homebrew formula builds from source and requires the full Xcode app/);
 });

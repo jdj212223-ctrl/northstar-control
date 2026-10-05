@@ -35,13 +35,17 @@ drivers and safety limits. GPU load and battery health are unavailable until
 reliable platform APIs are supported.
 
 On Apple Silicon macOS, optional fan profiles and MacBook charge limits can use
-the independently signed and notarized `smctl` helper. Install it separately
-with Homebrew, then authorize its LaunchDaemon from Terminal:
+the independently signed and notarized `smctl` helper. Download the Apple
+Silicon archive from the [smctl releases](https://github.com/leaperone/smctl/releases),
+install the `smctl` and `smctld` binaries together in a directory on `PATH`, then
+authorize its LaunchDaemon from Terminal:
 
 ```sh
-brew install leaperone/smctl/smctl
 sudo smctl daemon install
 ```
+
+The Homebrew formula builds from source and requires the full Xcode app.
+Installing the signed prebuilt release avoids that build requirement.
 
 Northstar detects the helper and asks for confirmation before changing fan or
 charging behavior. The helper supports only hardware it reports as capable;
