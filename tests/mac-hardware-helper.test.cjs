@@ -16,7 +16,7 @@ function helperWith(run, options = {}) {
 test("macOS helper reports fan and charging capabilities from the installed daemon", async () => {
   const helper = helperWith(async (_file, args) => ({
     stdout: args[0] === "fan"
-      ? JSON.stringify({ profile: "auto", fans: [{ actualRPM: 1200 }] })
+      ? JSON.stringify({ profile: "auto", fans: [{ actualRPM: 1200, minimumRPM: 1000, maximumRPM: 4900, mode: "auto" }] })
       : JSON.stringify({ chargingControlSupported: true, configuredLimit: "80" })
   }));
 
@@ -25,6 +25,9 @@ test("macOS helper reports fan and charging capabilities from the installed daem
     daemonAvailable: true,
     fanAvailable: true,
     fanProfile: "auto",
+    fanMode: "auto",
+    fanMinimumRpm: 1000,
+    fanMaximumRpm: 4900,
     chargeLimitAvailable: true,
     fanRpm: 1200,
     chargeLimit: 80
@@ -40,12 +43,13 @@ test("macOS helper reports absent installation and does not execute commands", a
   assert.equal(calls, 0);
 });
 
-test("fan profile requests use an allowlist and map to documented helper profiles", async () => {
+test("fan profile requests use a conservative allowlist and reject full-speed profiles", async () => {
   const calls = [];
   const helper = helperWith(async (_file, args) => { calls.push(args); return { stdout: "" }; });
 
-  assert.deepEqual(await helper.setFanProfile("Cool"), { ok: true, profile: "Cool" });
-  assert.deepEqual(calls, [["fan", "profile", "full"]]);
+  assert.deepEqual(await helper.setFanProfile("Quiet"), { ok: true, profile: "Quiet" });
+  assert.deepEqual(calls, [["fan", "profile", "quiet"]]);
+  assert.deepEqual(await helper.setFanProfile("Cool"), { ok: false, reason: "invalid-profile" });
   assert.deepEqual(await helper.setFanProfile("Unrestricted"), { ok: false, reason: "invalid-profile" });
   assert.equal(calls.length, 1);
 });
@@ -70,6 +74,7 @@ test("helper commands fail explicitly if the daemon or hardware rejects them", a
   assert.equal(status.daemonAvailable, false);
   assert.equal(status.fanAvailable, false);
   assert.equal(status.fanProfile, null);
+  assert.equal(status.fanMode, null);
   assert.equal(status.chargeLimitAvailable, false);
 });
 

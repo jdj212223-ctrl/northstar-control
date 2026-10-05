@@ -53,7 +53,10 @@ desktop Macs have no battery charge-limit control. Northstar does not bundle
 the helper or run privileged installers. USB port power control is not
 available through this integration. Windows and Linux fan/USB helper controls
 remain unavailable unless the operating system and hardware expose a validated
-control interface.
+control interface. Northstar offers only automatic and quiet fan profiles;
+full-speed mode is deliberately excluded. Fan RPM is labeled as an Apple SMC
+report and shown as approximate telemetry, not an independently verified
+tachometer measurement.
 
 ## Run locally
 

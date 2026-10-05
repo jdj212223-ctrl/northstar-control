@@ -6,8 +6,7 @@ const path = require("node:path");
 
 const fanProfiles = Object.freeze({
   Auto: "auto",
-  Quiet: "quiet",
-  Cool: "full"
+  Quiet: "quiet"
 });
 
 function parseJson(stdout) {
@@ -62,6 +61,9 @@ function createMacHardwareHelper(options = {}) {
       daemonAvailable,
       fanAvailable: Array.isArray(fans) && fans.length > 0,
       fanProfile: typeof fanProfile === "string" ? fanProfile : null,
+      fanMode: typeof fan?.mode === "string" ? fan.mode : null,
+      fanMinimumRpm: Number.isFinite(fan?.minimumRPM) ? Math.round(fan.minimumRPM) : null,
+      fanMaximumRpm: Number.isFinite(fan?.maximumRPM) ? Math.round(fan.maximumRPM) : null,
       chargeLimitAvailable: battery?.chargingControlSupported === true,
       fanRpm: fan ? Math.round(fan.actualRPM) : null,
       chargeLimit

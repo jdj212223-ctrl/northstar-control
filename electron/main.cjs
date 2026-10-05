@@ -279,6 +279,9 @@ async function getSystemStatus() {
     battery,
     temperatureC: sensors.temperatureC,
     fanRpm: hardwareControls.fanRpm ?? sensors.fanRpm,
+    fanMode: hardwareControls.fanMode ?? null,
+    fanMinimumRpm: hardwareControls.fanMinimumRpm ?? null,
+    fanMaximumRpm: hardwareControls.fanMaximumRpm ?? null,
     chargeLimit: hardwareControls.chargeLimit ?? sensors.chargeLimit,
     writableChargeLimit: hardwareControls.chargeLimitAvailable || sensors.writableChargeLimit,
     hardwareControls,
@@ -405,7 +408,7 @@ async function confirmHardwareChange(message, detail) {
 }
 
 async function setFanProfile(profile) {
-  if (!["Auto", "Quiet", "Cool"].includes(profile)) return { ok: false, reason: "invalid-profile" };
+  if (!["Auto", "Quiet"].includes(profile)) return { ok: false, reason: "invalid-profile" };
   if (process.platform !== "darwin") return { ok: false, reason: "unsupported" };
   const helper = createMacHardwareHelper();
   const status = await helper.getStatus();

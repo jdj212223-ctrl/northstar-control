@@ -499,12 +499,17 @@
     document.querySelector("#view-cooling .demo-chip").textContent = platform === "macOS" && helper?.fanAvailable
       ? "HELPER CONNECTED"
       : "FAN CONTROL UNAVAILABLE";
-    document.getElementById("fan-rpm").textContent = status.fanRpm === null ? "—" : status.fanRpm.toLocaleString();
-    document.getElementById("detail-rpm").firstChild.textContent = status.fanRpm === null ? "— " : `${status.fanRpm.toLocaleString()} `;
+    const reportedRpm = status.fanRpm === null ? "—" : platform === "macOS" ? `≈ ${status.fanRpm.toLocaleString()}` : status.fanRpm.toLocaleString();
+    document.getElementById("fan-rpm").textContent = reportedRpm;
+    document.getElementById("detail-rpm").firstChild.textContent = `${reportedRpm} `;
     document.getElementById("fan-description").textContent = status.fanRpm === null
       ? platform === "macOS" && helper?.installed && !helper.daemonAvailable ? "smctl helper installed; daemon is not responding" : "No supported fan sensor exposed by this system"
-      : platform === "macOS" && macFanAvailable ? "Detected fan · smctl helper" : "Detected hardware fan · read only";
-    document.getElementById("detail-fan-description").textContent = status.fanRpm === null ? "Fan telemetry unavailable" : platform === "macOS" ? "Fan telemetry from smctl helper" : "Detected hardware fan · read only";
+      : platform === "macOS" && macFanAvailable ? `Apple SMC report · ${helper.fanMode || "mode unknown"}` : "Detected hardware fan · read only";
+    document.getElementById("detail-fan-description").textContent = status.fanRpm === null
+      ? "Fan telemetry unavailable"
+      : platform === "macOS"
+        ? `Apple SMC report · ${helper?.fanMode || "mode unknown"} · reported range ${helper?.fanMinimumRpm ?? "—"}–${helper?.fanMaximumRpm ?? "—"} RPM`
+        : "Detected hardware fan · read only";
     document.querySelectorAll(".choice-card[data-fan]").forEach((choice) => {
       choice.disabled = !macFanAvailable || (platform === "macOS" && !helper?.daemonAvailable);
       if (helper?.fanProfile) choice.classList.toggle("selected", choice.dataset.fan.toLowerCase() === helper.fanProfile.toLowerCase());
