@@ -93,7 +93,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release create "$RELEASE_TAG" installers/* \
+            --repo "$GH_REPO" \
             --title "Northstar Control $RELEASE_TAG" \
             --generate-notes
