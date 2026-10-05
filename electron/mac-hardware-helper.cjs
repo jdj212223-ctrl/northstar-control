@@ -64,6 +64,9 @@ function createMacHardwareHelper(options = {}) {
       fanMode: typeof fan?.mode === "string" ? fan.mode : null,
       fanMinimumRpm: Number.isFinite(fan?.minimumRPM) ? Math.round(fan.minimumRPM) : null,
       fanMaximumRpm: Number.isFinite(fan?.maximumRPM) ? Math.round(fan.maximumRPM) : null,
+      fanAtReportedMinimum: Number.isFinite(fan?.minimumRPM)
+        && Number.isFinite(fan?.actualRPM)
+        && Math.abs(fan.actualRPM - fan.minimumRPM) <= 2,
       chargeLimitAvailable: battery?.chargingControlSupported === true,
       fanRpm: fan ? Math.round(fan.actualRPM) : null,
       chargeLimit

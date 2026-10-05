@@ -16,7 +16,7 @@ function helperWith(run, options = {}) {
 test("macOS helper reports fan and charging capabilities from the installed daemon", async () => {
   const helper = helperWith(async (_file, args) => ({
     stdout: args[0] === "fan"
-      ? JSON.stringify({ profile: "auto", fans: [{ actualRPM: 1200, minimumRPM: 1000, maximumRPM: 4900, mode: "auto" }] })
+      ? JSON.stringify({ profile: "auto", fans: [{ actualRPM: 1001, minimumRPM: 1000, maximumRPM: 4900, mode: "auto" }] })
       : JSON.stringify({ chargingControlSupported: true, configuredLimit: "80" })
   }));
 
@@ -28,8 +28,9 @@ test("macOS helper reports fan and charging capabilities from the installed daem
     fanMode: "auto",
     fanMinimumRpm: 1000,
     fanMaximumRpm: 4900,
+    fanAtReportedMinimum: true,
     chargeLimitAvailable: true,
-    fanRpm: 1200,
+    fanRpm: 1001,
     chargeLimit: 80
   });
 });
@@ -75,6 +76,7 @@ test("helper commands fail explicitly if the daemon or hardware rejects them", a
   assert.equal(status.fanAvailable, false);
   assert.equal(status.fanProfile, null);
   assert.equal(status.fanMode, null);
+  assert.equal(status.fanAtReportedMinimum, false);
   assert.equal(status.chargeLimitAvailable, false);
 });
 

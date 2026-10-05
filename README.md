@@ -56,7 +56,9 @@ remain unavailable unless the operating system and hardware expose a validated
 control interface. Northstar offers only automatic and quiet fan profiles;
 full-speed mode is deliberately excluded. Fan RPM is labeled as an Apple SMC
 report and shown as approximate telemetry, not an independently verified
-tachometer measurement.
+tachometer measurement. On the M4 Mac mini, smctl's hardware notes report a
+1,000–4,900 RPM fan range; Northstar identifies readings within 2 RPM of that
+reported minimum as running at the minimum.
 
 ## Run locally
 
