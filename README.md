@@ -84,6 +84,11 @@ npm run package:windows
 npm run package:linux
 ```
 
+Linux builds produce AppImage, DEB, and RPM packages. Windows builds produce
+an NSIS installer. Release builds use GitHub Actions on native operating-system
+runners and publish installers for all supported platforms when a `v*` tag is
+pushed.
+
 Linux battery thresholds require the current user to already have permission to
 write the kernel-exposed threshold. Linux temperature and fan-speed readings
 come from exposed kernel sensors. Windows power profiles depend on the plan

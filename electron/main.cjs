@@ -37,6 +37,9 @@ const windowOptions = {
   minHeight: 650,
   title: "Northstar Control",
   backgroundColor: "#0c0e13",
+  ...(process.platform === "win32" || process.platform === "linux"
+    ? { icon: path.join(__dirname, "..", "assets", process.platform === "win32" ? "northstar.ico" : "northstar.png") }
+    : {}),
   show: false,
   webPreferences: {
     preload: path.join(__dirname, "preload.cjs"),
