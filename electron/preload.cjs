@@ -8,6 +8,11 @@ contextBridge.exposeInMainWorld("northstar", Object.freeze({
   setPowerProfile: (profile) => ipcRenderer.invoke("system:set-power-profile", profile),
   setChargeLimit: (enabled) => ipcRenderer.invoke("system:set-charge-limit", enabled),
   requestHardwareAccess: () => ipcRenderer.invoke("system:request-hardware-access"),
+  remote: Object.freeze({
+    getStatus: () => ipcRenderer.invoke("remote:status"),
+    pair: (options) => ipcRenderer.invoke("remote:pair", options),
+    unpair: () => ipcRenderer.invoke("remote:unpair")
+  }),
   github: Object.freeze({
     getStatus: () => ipcRenderer.invoke("github:status"),
     saveClientId: (clientId) => ipcRenderer.invoke("github:save-client-id", clientId),

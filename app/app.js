@@ -32,6 +32,10 @@
   document.getElementById("connection-label").textContent = nativeApp ? "Connecting…" : "Desktop app required";
   document.getElementById("settings-platform").textContent = platform;
   document.getElementById("device-name").textContent = platform === "macOS" ? "This Mac" : platform === "Windows" ? "This PC" : platform === "Linux" ? "This Linux computer" : "Your computer";
+  if (!nativeApp) {
+    document.getElementById("remote-pair-button").disabled = true;
+    document.getElementById("remote-device-status").textContent = "Launch the Northstar desktop app to pair this computer.";
+  }
   if (platform !== "macOS") document.getElementById("mac-helper-button").closest(".setting-row").hidden = true;
   if (platform === "Windows" || platform === "Linux") {
     document.getElementById("overclock-state-title").textContent = "No validated tuner available";
@@ -155,6 +159,8 @@
   document.getElementById("modal-confirm").addEventListener("click", closeAccessDialog);
   document.getElementById("github-sign-in").addEventListener("click", startGitHubSignIn);
   document.getElementById("github-sign-out").addEventListener("click", signOutGitHub);
+  document.getElementById("remote-pair-button").addEventListener("click", pairRemoteComputer);
+  document.getElementById("remote-unpair-button").addEventListener("click", unpairRemoteComputer);
   document.getElementById("github-save-client-id").addEventListener("click", saveGitHubClientId);
   document.getElementById("github-open-verification").addEventListener("click", async () => {
     try {
@@ -373,6 +379,77 @@
       }
   }
 
+      async function refreshRemoteStatus() {
+        if (!nativeApp) return;
+        try {
+          const status = await window.northstar.remote.getStatus();
+          const serverInput = document.getElementById("remote-server-url");
+          if (status.serverUrl && !serverInput.value) serverInput.value = status.serverUrl;
+          const pairButton = document.getElementById("remote-pair-button");
+          const unpairButton = document.getElementById("remote-unpair-button");
+          const codeInput = document.getElementById("remote-pairing-code");
+          pairButton.disabled = status.paired;
+          codeInput.disabled = status.paired;
+          unpairButton.hidden = !status.paired;
+          const message = status.paired
+            ? `${status.device.name} is paired · ${status.connected ? "connected and sharing live status" : "reconnecting to remote service"}`
+            : "This computer is not paired to a remote account.";
+          document.getElementById("remote-device-status").textContent = message;
+        } catch {
+          document.getElementById("remote-device-status").textContent = "Could not read secure remote-pairing status.";
+        }
+      }
+
+      async function pairRemoteComputer() {
+        const button = document.getElementById("remote-pair-button");
+        const status = document.getElementById("remote-device-status");
+        button.disabled = true;
+        status.textContent = "Pairing this computer securely…";
+        try {
+          const system = await window.northstar.getSystemStatus();
+          const result = await window.northstar.remote.pair({
+            serverUrl: document.getElementById("remote-server-url").value,
+            code: document.getElementById("remote-pairing-code").value,
+            name: system.hostname || document.getElementById("device-name").textContent
+          });
+          if (!result.ok) {
+            const messages = {
+              "invalid-server-url": "Use an HTTPS remote-service URL (HTTP is permitted only for localhost testing).",
+              "invalid-pairing-code": "Enter the one-time pairing code shown by the signed-in web dashboard.",
+              "secure-storage-unavailable": "Pairing is disabled because OS-backed secure storage is unavailable.",
+              "server-unreachable": "Could not reach the remote service.",
+              "pairing-code-invalid-or-expired": "That pairing code expired or was already used. Generate a new code on the website."
+            };
+            status.textContent = messages[result.reason] || `Pairing failed: ${result.reason}.`;
+            button.disabled = false;
+            return;
+          }
+          document.getElementById("remote-pairing-code").value = "";
+          await refreshRemoteStatus();
+          showToast("This computer is paired. It will share live status with the account.");
+        } catch {
+          status.textContent = "Pairing failed. Check the service URL and try again.";
+          button.disabled = false;
+        }
+      }
+
+      async function unpairRemoteComputer() {
+        const status = document.getElementById("remote-device-status");
+        if (!window.confirm("Remove this computer from the Northstar account and revoke its remote access?")) return;
+        try {
+          const result = await window.northstar.remote.unpair();
+          if (!result.ok) {
+            status.textContent = result.reason === "server-unreachable"
+              ? "Could not reach the service to revoke this computer. It remains paired; reconnect and try again."
+              : "The server did not confirm revocation. This computer remains paired.";
+            return;
+          }
+          await refreshRemoteStatus();
+          showToast("Remote access for this computer has been revoked.");
+        } catch {
+          status.textContent = "Could not revoke remote access. This computer remains paired.";
+        }
+      }
   function formatGigabytes(bytes) {
     return (bytes / (1024 ** 3)).toFixed(1);
   }
@@ -557,7 +634,9 @@
     refreshStatus();
     refreshDevices();
     loadGitHubStatus();
+    refreshRemoteStatus();
     window.setInterval(refreshStatus, 10000);
+    window.setInterval(refreshRemoteStatus, 5000);
   } else {
     document.getElementById("app-state").textContent = "DESKTOP APP REQUIRED";
     document.getElementById("connection-label").textContent = "Desktop app required";

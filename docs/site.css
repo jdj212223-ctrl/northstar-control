@@ -172,9 +172,44 @@ h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
 .github-card strong { font-size: 10px; }
 .github-card span { margin-top: 2px; color: var(--muted); font-size: 9px; }
 .github-card a { margin-left: auto; color: var(--lime); text-decoration: none; }
+.account-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 13px 0; }
+.account-actions > span { flex: 1 1 180px; color: var(--muted); font-size: 9px; }
+.web-device-flow { display: grid; gap: 7px; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-raised); }
+.web-device-flow strong { color: var(--lime); font: 700 21px ui-monospace, monospace; letter-spacing: 2px; }
+.web-device-flow span { color: var(--muted); font-size: 9px; }
+.web-device-flow a { color: var(--lime); font-size: 9px; text-decoration: none; }
+.web-device-flow .danger-link { justify-self: start; padding: 0; font-size: 9px; }
 .divider { border-top: 1px solid var(--border); }
 .small-copy { margin: 13px 0; color: var(--muted); font-size: 9px; line-height: 1.6; }
 .full-button { width: 100%; }
+.api-settings-panel { margin-top: 13px; padding: 18px; }
+.api-url-label { display: block; margin: 14px 0 6px; color: var(--text); font-size: 10px; }
+.api-url-row { display: flex; gap: 8px; }
+.api-url-row input { min-width: 0; flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-raised); color: var(--text); font-size: 10px; }
+.api-status { margin: 8px 0 0; color: var(--muted); font-size: 9px; }
+.pair-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 11px 20px; margin: 15px 0; padding: 17px; }
+.pair-card h2 { margin-top: 7px; }
+.pair-card p { max-width: 600px; margin: 5px 0 0; color: var(--muted); font-size: 9px; }
+.pair-code-output { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--panel-raised); }
+.pair-code-output strong { color: var(--lime); font: 700 19px ui-monospace, monospace; letter-spacing: 2px; }
+.pair-code-output span { color: var(--muted); font-size: 9px; }
+.remote-device-list { display: grid; gap: 10px; }
+.remote-device { padding: 16px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
+.remote-device-head { display: flex; align-items: flex-start; gap: 11px; }
+.device-platform-icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border: 1px solid var(--border); border-radius: 7px; color: var(--blue); }
+.remote-device-title { min-width: 0; flex: 1; }
+.remote-device-title strong { display: block; font-size: 11px; overflow-wrap: anywhere; }
+.remote-device-title span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+.device-online { color: var(--green) !important; }.device-offline { color: var(--quiet) !important; }
+.device-remove { border: 0; background: transparent; color: var(--danger); font-size: 9px; cursor: pointer; }
+.device-telemetry { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border); }
+.device-telemetry span { color: var(--quiet); font: 7px ui-monospace, monospace; letter-spacing: .6px; }
+.device-telemetry strong { display: block; margin-top: 4px; color: var(--text); font: 10px ui-monospace, monospace; }
+.device-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.device-controls select { padding: 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-raised); color: var(--text); font-size: 9px; }
+.device-controls .button { min-height: 29px; }
+.device-message { flex-basis: 100%; color: var(--muted); font-size: 9px; }
+.device-empty[hidden] { display: none; }
 .privacy-panel { display: flex; gap: 12px; align-items: flex-start; margin-top: 13px; padding: 15px; }
 .privacy-icon { color: var(--lime); font-size: 17px; }
 .privacy-panel strong { font-size: 10px; }
@@ -208,6 +243,10 @@ h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
   .empty-copy h2 { font-size: 16px; }
   .section-heading { align-items: flex-start; flex-direction: column; }
   .settings-layout { grid-template-columns: 1fr; }
+  .pair-card { grid-template-columns: 1fr; }
+  .pair-card > .button { justify-self: start; }
+  .pair-code-output { grid-column: 1; }
+  .device-telemetry { grid-template-columns: repeat(2, 1fr); }
   .notice { flex-wrap: wrap; }
   .notice > div { flex-basis: calc(100% - 38px); }
   .text-link { margin-left: 33px; }

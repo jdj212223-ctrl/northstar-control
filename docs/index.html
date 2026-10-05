@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b0d11">
     <meta name="description" content="Northstar Control web dashboard for your computers, account, and device settings.">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https: wss: http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'self'">
     <title>Northstar Control — Your computers</title>
     <link rel="stylesheet" href="site.css">
     <script src="site.js" defer></script>
@@ -26,12 +26,12 @@
         <div class="sidebar-bottom">
           <div class="local-note">
             <span class="status-dot"></span>
-            <div><strong>Remote access is off</strong><p>No computers are paired. This site has no connection to your devices.</p></div>
+            <div><strong id="sidebar-connection-title">Remote access is off</strong><p id="sidebar-connection-copy">Configure your service to see paired computers here.</p></div>
           </div>
           <a class="sidebar-link" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">Source code <span>↗</span></a>
           <div class="profile">
             <div class="avatar" aria-hidden="true">N</div>
-            <div><strong>Local browser</strong><span>Not signed in</span></div>
+            <div><strong id="sidebar-account-name">Local browser</strong><span id="sidebar-account-detail">Not signed in</span></div>
             <button class="more-button" data-view="settings" aria-label="Open account and settings">···</button>
           </div>
         </div>
@@ -49,45 +49,45 @@
 
         <section class="view active" id="view-overview">
           <div class="heading-row">
-            <div><div class="eyebrow">NORTHSTAR CONTROL <span>·</span> WEB DASHBOARD</div><h1>Your computers,<br><em>in one place.</em></h1><p class="subtitle">A private control room for your PCs and Macs. Pairing and secure remote access are not available yet.</p></div>
+            <div><div class="eyebrow">NORTHSTAR CONTROL <span>·</span> WEB DASHBOARD</div><h1>Your computers,<br><em>in one place.</em></h1><p class="subtitle">A private control room for your PCs and Macs, connected through your Northstar service.</p></div>
             <button class="button button-primary" data-view="devices"><span>＋</span> Add a computer</button>
           </div>
 
           <div class="notice notice-amber" role="status">
             <span class="notice-icon">!</span>
-            <div><strong>Remote control is not connected</strong><p>GitHub Pages can host this dashboard, but it cannot securely relay commands. No device telemetry or control requests are sent by this website.</p></div>
+            <div><strong id="remote-connection-title">Remote service is not configured</strong><p id="remote-connection-copy">Set your backend URL in Account &amp; settings to connect the dashboard with paired computers.</p></div>
             <a href="https://github.com/jdj212223-ctrl/northstar-control#remote-access" class="text-link">How it works <span>↗</span></a>
           </div>
 
           <div class="summary-grid">
             <article class="summary-card">
               <div class="summary-top"><span>PAIRED COMPUTERS</span><span class="summary-icon">▣</span></div>
-              <strong class="summary-value">0</strong>
-              <p>No computers connected</p>
+              <strong class="summary-value" id="paired-count">0</strong>
+              <p id="paired-caption">No computers connected</p>
             </article>
             <article class="summary-card">
               <div class="summary-top"><span>ONLINE NOW</span><span class="summary-icon green">◉</span></div>
-              <strong class="summary-value">0</strong>
-              <p>Live status needs a secure device service</p>
+              <strong class="summary-value" id="online-count">0</strong>
+              <p>Live computers connected now</p>
             </article>
             <article class="summary-card">
               <div class="summary-top"><span>ACCOUNT</span><span class="summary-icon violet">⌂</span></div>
-              <strong class="summary-value value-label">Not signed in</strong>
-              <p>Website account linking is not configured</p>
+              <strong class="summary-value value-label" id="overview-account-name">Not signed in</strong>
+              <p id="overview-account-status">Connect to your remote service to manage computers</p>
             </article>
           </div>
 
           <div class="section-heading"><div><h2>Your devices</h2><p>Computers you choose to pair will appear here.</p></div><button class="button button-secondary" data-view="devices">Manage devices <span>→</span></button></div>
           <div class="empty-card">
             <div class="empty-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span>✳</span></div>
-            <div class="empty-copy"><div class="eyebrow">NOT PAIRED</div><h2>Your first computer starts here.</h2><p>The desktop app currently manages supported controls on the computer where it is running. Secure remote pairing, an online relay, and web authentication still need to be built.</p><button class="button button-primary" data-view="devices">See pairing status <span>→</span></button></div>
+            <div class="empty-copy"><div class="eyebrow">GET CONNECTED</div><h2>Your computers, together.</h2><p>Sign in on the website, generate a one-time pairing code, then enter it in Northstar Control on each computer.</p><button class="button button-primary" data-view="devices">Manage computers <span>→</span></button></div>
           </div>
 
-          <div class="section-heading feature-heading"><div><h2>Control, with guardrails</h2><p>Remote controls stay unavailable until the device agent and secure relay exist.</p></div></div>
+          <div class="section-heading feature-heading"><div><h2>Control, with guardrails</h2><p>Supported changes are approved on the computer before they are applied.</p></div></div>
           <div class="feature-grid">
             <article class="feature-card"><span class="feature-icon blue">◌</span><div><strong>Cooling &amp; fans</strong><p>Fan telemetry and speed controls require validated hardware support and an authorized local helper.</p><span class="feature-state">NOT CONNECTED</span></div></article>
-            <article class="feature-card"><span class="feature-icon lime">⌁</span><div><strong>Performance &amp; clocks</strong><p>Overclocking can damage hardware. No clock-tuning service is available or exposed to this website.</p><span class="feature-state">NOT CONNECTED</span></div></article>
-            <article class="feature-card"><span class="feature-icon green">ϟ</span><div><strong>Battery &amp; power</strong><p>Battery telemetry and power-profile changes must be checked and approved by each computer.</p><span class="feature-state">NOT CONNECTED</span></div></article>
+            <article class="feature-card"><span class="feature-icon lime">⌁</span><div><strong>Performance &amp; clocks</strong><p>Supported OS power profiles can be requested. Overclocking is not remotely available.</p><span class="feature-state">POWER PROFILES ONLY</span></div></article>
+            <article class="feature-card"><span class="feature-icon green">ϟ</span><div><strong>Battery &amp; power</strong><p>Battery status is shared where available. Charge-limit changes require on-device confirmation.</p><span class="feature-state">LOCAL APPROVAL REQUIRED</span></div></article>
           </div>
 
           <footer class="footer"><span>Northstar Control · Open source under MIT</span><span>Built to keep your computer <i>yours.</i></span></footer>
@@ -98,19 +98,25 @@
             <div><div class="eyebrow">YOUR WORKSPACE <span>·</span> DEVICES</div><h1>Computer <em>fleet.</em></h1><p class="subtitle">Pair, check, and manage the computers connected to your account.</p></div>
             <span class="count-pill"><i></i>0 COMPUTERS</span>
           </div>
-          <div class="notice notice-amber" role="status"><span class="notice-icon">!</span><div><strong>Pairing is not available yet</strong><p>There is no cloud service or secure computer enrollment flow configured. We won't show fake devices or pretend to send remote commands.</p></div></div>
-          <div class="device-empty panel">
+          <div class="notice notice-amber" id="device-connection-notice" role="status"><span class="notice-icon">!</span><div><strong id="device-connection-title">Connect to your remote service</strong><p id="device-connection-copy">Save the service URL and sign in to see computers paired with your account.</p></div></div>
+          <div class="pair-card panel">
+            <div><div class="eyebrow">PAIR A COMPUTER</div><h2>One-time pairing code</h2><p>Generate a short-lived code, then enter it in Northstar Control on the computer. Pairing must be approved on that computer.</p></div>
+            <button class="button button-primary" id="generate-pair-code" disabled>Generate code</button>
+            <div class="pair-code-output" id="pair-code-output" hidden><strong id="pair-code-value"></strong><span id="pair-code-expiry"></span></div>
+          </div>
+          <div id="remote-device-list" class="remote-device-list"></div>
+          <div class="device-empty panel" id="device-empty">
             <div class="device-outline" aria-hidden="true"><span></span><i></i></div>
             <div class="eyebrow">NO PAIRED COMPUTERS</div>
             <h2>Nothing is connected to this account.</h2>
-            <p>Install the desktop app to monitor and control supported features locally. Remote pairing will require a signed-in account, an encrypted device connection, and explicit approval on the computer.</p>
+            <p>Sign in and configure your service to list paired computers. Each computer must be paired from its desktop app and approve every supported hardware change locally.</p>
             <a class="button button-primary" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">Get Northstar Control <span>↗</span></a>
           </div>
-          <div class="section-heading"><div><h2>Remote access checklist</h2><p>These protections must be in place before a device can be managed here.</p></div></div>
+          <div class="section-heading"><div><h2>Access safeguards</h2><p>Every paired computer is protected by these steps.</p></div></div>
           <div class="checklist">
-            <div><span class="check-number">01</span><span><strong>Authenticate your account</strong><small>Use a supported sign-in flow; never put a client secret in a public website.</small></span><b>NOT SET UP</b></div>
-            <div><span class="check-number">02</span><span><strong>Pair this computer locally</strong><small>Confirm the pairing code on the device itself before it joins your account.</small></span><b>NOT SET UP</b></div>
-            <div><span class="check-number">03</span><span><strong>Approve individual controls</strong><small>Keep hardware permissions local; sign out and revoke access from the device.</small></span><b>NOT SET UP</b></div>
+            <div><span class="check-number">01</span><span><strong>Authenticate your account</strong><small>GitHub Device Flow is handled by your configured service; the browser receives a secure session only.</small></span><b>REQUIRED</b></div>
+            <div><span class="check-number">02</span><span><strong>Pair each computer explicitly</strong><small>Use a single-use code and enter it in the desktop app on that computer.</small></span><b>REQUIRED</b></div>
+            <div><span class="check-number">03</span><span><strong>Approve individual changes</strong><small>Power and battery requests display a native confirmation on the paired computer.</small></span><b>ON DEVICE</b></div>
           </div>
           <footer class="footer"><span>Device list is intentionally empty</span><span>No remote control commands are sent</span></footer>
         </section>
@@ -119,7 +125,7 @@
           <div class="heading-row">
             <div><div class="eyebrow">PREFERENCES <span>·</span> ACCOUNT</div><h1>Account &amp; <em>settings.</em></h1><p class="subtitle">Manage this browser's preferences and see your account connection status.</p></div>
           </div>
-          <div class="notice notice-blue"><span class="notice-icon">i</span><div><strong>No website account is connected</strong><p>This static GitHub Pages site doesn't handle login or store account credentials. Sign-in must be added with a secure authentication and device service.</p></div></div>
+          <div class="notice notice-blue" id="account-connection-notice"><span class="notice-icon">i</span><div><strong id="account-connection-title">Connect to your remote service</strong><p id="account-connection-copy">The service handles GitHub Device Flow and keeps GitHub access tokens on the server. The website receives only a secure session cookie.</p></div></div>
           <div class="settings-layout">
             <section class="panel settings-panel">
               <div class="panel-heading"><div><h2>Display preferences</h2><p>Saved only in this browser on this device.</p></div><span class="panel-icon">◐</span></div>
@@ -129,14 +135,22 @@
               <p class="save-status" id="save-status" role="status" aria-live="polite">Preferences are stored in this browser only.</p>
             </section>
             <section class="panel account-panel">
-              <div class="panel-heading"><div><h2>GitHub account</h2><p>Open source project identity—not a connected Northstar account.</p></div><span class="panel-icon">⌂</span></div>
-              <div class="github-card"><div class="github-mark">GH</div><div><strong>jdj212223-ctrl</strong><span>Public GitHub profile</span></div><a href="https://github.com/jdj212223-ctrl" target="_blank" rel="noopener noreferrer" aria-label="Open GitHub profile">↗</a></div>
+              <div class="panel-heading"><div><h2>GitHub account</h2><p>Sign in to manage computers paired to this account.</p></div><span class="panel-icon">⌂</span></div>
+              <div class="github-card"><div class="github-mark">GH</div><div><strong id="github-account-name">Not signed in</strong><span id="github-account-detail">Connect your GitHub account to see your computers</span></div><a id="github-profile-link" href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="Open GitHub profile" hidden>↗</a></div>
+              <div class="account-actions"><button class="button button-primary" id="web-sign-in">Sign in with GitHub</button><button class="button button-secondary" id="web-sign-out" hidden>Sign out</button><span id="web-auth-status" role="status" aria-live="polite">Sign-in uses GitHub Device Flow; the access token stays on the service.</span></div>
+              <div class="web-device-flow" id="web-device-flow" hidden><strong id="web-device-code"></strong><span id="web-device-status" role="status" aria-live="polite"></span><a href="https://github.com/login/device" target="_blank" rel="noopener noreferrer">Authorize this code on GitHub ↗</a><button id="cancel-web-sign-in" class="danger-link">Cancel sign-in</button></div>
               <div class="divider"></div>
-              <p class="small-copy">GitHub sign-in in the desktop app identifies your GitHub profile only. It does not connect computers to this website or grant hardware access.</p>
+              <p class="small-copy">Signing in identifies your GitHub account. Pair each computer separately; hardware settings still require approval on that computer.</p>
               <a class="button button-secondary full-button" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">View project on GitHub <span>↗</span></a>
             </section>
           </div>
-          <section class="panel privacy-panel"><span class="privacy-icon">◇</span><div><strong>Your device stays under your control</strong><p>This website stores only display preferences in local browser storage. It does not collect telemetry, store tokens, or send commands to your computers.</p></div></section>
+          <section class="panel api-settings-panel">
+            <div class="panel-heading"><div><h2>Remote service</h2><p>Enter your self-hosted Northstar backend URL. This is separate from the GitHub OAuth Homepage URL.</p></div><span class="panel-icon">⌁</span></div>
+            <label class="api-url-label" for="api-base-url">Service URL</label>
+            <div class="api-url-row"><input id="api-base-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-northstar-server.example"><button class="button button-secondary" id="save-api-url">Save service URL</button></div>
+            <p class="api-status" id="api-status" role="status" aria-live="polite">The service URL is saved in this browser. HTTPS is required outside localhost.</p>
+          </section>
+          <section class="panel privacy-panel"><span class="privacy-icon">◇</span><div><strong>Your device stays under your control</strong><p>The website stores no GitHub access token. The service holds GitHub identity, device enrollment, and telemetry; supported remote changes require confirmation in the desktop app.</p></div></section>
           <footer class="footer"><span>Preferences are local to this browser</span><button class="danger-link" id="clear-preferences">Reset browser preferences</button></footer>
         </section>
       </main>

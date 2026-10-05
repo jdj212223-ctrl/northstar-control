@@ -5,10 +5,14 @@
   "author": "Northstar contributors",
   "license": "MIT",
   "description": "Cross-platform desktop hardware monitor and power control",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "main": "electron/main.cjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check app/app.js && node --check docs/site.js",
+    "serve": "node server/index.cjs",
+    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/remote-agent.cjs && node --check server/index.cjs && node --check app/app.js && node --check docs/site.js",
     "test": "node --test",
     "package:mac": "electron-builder --mac --universal",
     "package:windows": "electron-builder --win",
@@ -17,6 +21,9 @@
   "devDependencies": {
     "electron": "44.5.1",
     "electron-builder": "26.15.3"
+  },
+  "dependencies": {
+    "ws": "8.22.0"
   },
   "build": {
     "appId": "org.northstar.control",
@@ -27,6 +34,7 @@
     "files": [
       "app/**/*",
       "electron/**/*",
+      "shared/**/*",
       "package.json",
       "LICENSE",
       "README.md",

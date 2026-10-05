@@ -181,11 +181,21 @@
             <div class="github-config">
               <label for="github-client-id">OAuth App Client ID</label>
               <div class="client-id-row"><input id="github-client-id" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="128" placeholder="Enter your public GitHub Client ID"><button class="button button-secondary" id="github-save-client-id">Save Client ID</button></div>
-              <p><strong>Homepage URL:</strong> <code>https://github.com/jdj212223-ctrl/northstar-control</code>. The required callback URL is not used by Device Flow, so enter the same URL there. Enable <strong>Device Flow</strong>, and turn off expiring access tokens until token refresh is supported. Only the public Client ID is stored; no client secret is used. <button class="inline-link" id="github-registration-link">Open GitHub Developer Settings ↗</button></p>
+              <p><strong>Homepage URL:</strong> <code>https://jdj212223-ctrl.github.io/northstar-control/</code>. This desktop app and web dashboard use Device Flow; the required callback URL is not used. Enable <strong>Device Flow</strong>. Only the public Client ID is stored in the app; never add a client secret. <button class="inline-link" id="github-registration-link">Open GitHub Developer Settings ↗</button></p>
             </div>
             <div class="account-notice"><span>◇</span><p><strong>Separate from computer permissions.</strong> GitHub sign-in does not grant macOS helper, administrator, battery, fan, or USB access. The app requests only GitHub profile identity.</p></div>
           </section>
-          <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
+            <section class="panel settings-panel remote-pairing-panel">
+              <div class="panel-heading"><div><h2>Pair this computer with your web dashboard</h2><p>Pairing gives your signed-in account live status. Hardware changes still require approval on this computer.</p></div><span class="icon-disc green-disc">⌁</span></div>
+              <label class="pairing-label" for="remote-server-url">Remote service URL</label>
+              <input class="pairing-input" id="remote-server-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-server.example">
+              <label class="pairing-label" for="remote-pairing-code">One-time pairing code</label>
+              <div class="client-id-row"><input class="pairing-input" id="remote-pairing-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" placeholder="Enter code from your web dashboard"><button class="button button-primary" id="remote-pair-button">Pair computer</button></div>
+              <div class="remote-device-status" id="remote-device-status" role="status" aria-live="polite">This computer is not paired to a remote account.</div>
+              <div class="account-actions"><button class="button button-secondary" id="remote-unpair-button" hidden>Unpair this computer</button></div>
+              <p class="pairing-warning">The remote service relays telemetry and supported power settings. Each power or battery change triggers a native confirmation on this computer. Fan-speed and clock controls are not available.</p>
+            </section>
+            <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
         </section>
 
         <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 0.1</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>

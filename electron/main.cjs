@@ -10,6 +10,7 @@ const path = require("node:path");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 const { createGitHubAuth } = require("./github-auth.cjs");
+const { createRemoteAgent } = require("./remote-agent.cjs");
 
 const execFileAsync = promisify(execFile);
 const powerPlanIds = Object.freeze({
@@ -24,6 +25,7 @@ const profilesById = Object.freeze({
 });
 const validProfiles = new Set(["Efficiency", "Balanced", "Performance"]);
 let githubAuth;
+let remoteAgent;
 const windowsSystemRoot = process.env.SystemRoot || "C:\\Windows";
 const windowsPowerCfg = path.join(windowsSystemRoot, "System32", "powercfg.exe");
 const windowsPowerShell = path.join(windowsSystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -403,6 +405,17 @@ function registerIpc() {
     });
     return { ok: false, reason: "hardware-service-not-installed" };
   });
+  ipcMain.handle("remote:status", async (event) => { assertLocalRenderer(event); return remoteAgent.status(); });
+  ipcMain.handle("remote:pair", async (event, options) => {
+    assertLocalRenderer(event);
+    if (!options || typeof options !== "object" || Array.isArray(options)) return { ok: false, reason: "invalid-pairing-request" };
+    return remoteAgent.pair({
+      serverUrl: options.serverUrl,
+      code: options.code,
+      name: options.name
+    });
+  });
+  ipcMain.handle("remote:unpair", async (event) => { assertLocalRenderer(event); return remoteAgent.unpair(); });
   ipcMain.handle("github:status", (event) => { assertLocalRenderer(event); return githubAuth.getStatus(); });
   ipcMain.handle("github:save-client-id", (event, clientId) => { assertLocalRenderer(event); return githubAuth.saveClientId(clientId); });
   ipcMain.handle("github:begin", (event) => { assertLocalRenderer(event); return githubAuth.begin(); });
@@ -436,6 +449,29 @@ if (isElectron) {
       safeStorage,
       storagePath: path.join(app.getPath("userData"), "github-account.json")
     });
+    remoteAgent = createRemoteAgent({
+      safeStorage,
+      storagePath: path.join(app.getPath("userData"), "remote-device.json"),
+      getSystemStatus,
+      setPowerProfile,
+      setChargeLimit,
+      confirmCommand: async ({ title, message, detail, confirmLabel }) => {
+        const result = await dialog.showMessageBox({
+          type: "warning",
+          title,
+          message,
+          detail,
+          buttons: ["Decline", confirmLabel],
+          defaultId: 0,
+          cancelId: 0,
+          noLink: true
+        });
+        return result.response === 1;
+      }
+    });
+    void remoteAgent.start().catch((error) => {
+      console.error("Could not restore the Northstar remote-device connection:", error.message);
+    });
     registerIpc();
     createWindow();
     app.on("activate", () => {
@@ -446,6 +482,7 @@ if (isElectron) {
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
   });
+  app.on("before-quit", () => remoteAgent?.stop());
 }
 
 module.exports = { getSystemStatus, getDevices, setPowerProfile, setChargeLimit };
