@@ -34,14 +34,16 @@ function parseUnixProcessList(output) {
 }
 
 function parseLinuxProcessStat(output) {
-  const match = output.match(/^(\d+) \((.*)\) (.*)$/);
-  if (!match) return null;
-  const fields = match[3].trim().split(/\s+/);
+  const openingParen = output.indexOf(" (");
+  const closingParen = output.lastIndexOf(")");
+  if (openingParen < 1 || closingParen <= openingParen) return null;
+  const pid = Number(output.slice(0, openingParen).trim());
+  const fields = output.slice(closingParen + 1).trim().split(/\s+/);
   const userTicks = Number(fields[11]);
   const systemTicks = Number(fields[12]);
   const ppid = Number(fields[1]);
-  if (![userTicks, systemTicks, ppid].every(Number.isFinite)) return null;
-  return { pid: Number(match[1]), ppid, cpuTicks: userTicks + systemTicks, name: match[2] };
+  if (![pid, userTicks, systemTicks, ppid].every(Number.isFinite)) return null;
+  return { pid, ppid, cpuTicks: userTicks + systemTicks, name: output.slice(openingParen + 2, closingParen).replace(/\s+/g, " ").trim() };
 }
 
 function parseMacTopCpu(output) {
@@ -148,14 +150,14 @@ async function getLinuxProcessActivity() {
           fs.promises.readFile(path.join(directory, "comm"), "utf8").catch(() => "")
         ]);
         const stat = parseLinuxProcessStat(statText);
-        const memoryKb = Number(statusText.match(/^VmRSS:\s+(\d+)\s+kB$/m)?.[1]);
-        if (!stat || !Number.isFinite(memoryKb)) return null;
+        const memoryKb = Number(statusText.match(/^[ \t]*VmRSS:[ \t]*(\d+)[ \t]+kB[ \t]*$/m)?.[1]);
+        if (!stat) return null;
         return {
           pid: stat.pid,
           name: stat.name || comm.trim() || path.basename(command),
           command: command.replace(/ \(deleted\)$/, "") || comm.trim() || stat.name,
           cpuTicks: stat.cpuTicks,
-          memoryBytes: memoryKb * 1024
+          memoryBytes: Number.isFinite(memoryKb) ? memoryKb * 1024 : 0
         };
       } catch {
         return null;
@@ -180,6 +182,15 @@ async function getLinuxProcessActivity() {
   return processes;
 }
 
+async function getPsProcessActivity() {
+  const { stdout } = await execFileAsync("ps", ["-axo", "pid=,ppid=,%cpu=,rss=,comm="], {
+    timeout: 8000,
+    windowsHide: true,
+    maxBuffer: 4 * 1024 * 1024
+  });
+  return parseUnixProcessList(stdout);
+}
+
 async function getProcessActivity(platform = process.platform) {
   let processes;
   if (platform === "win32") {
@@ -193,13 +204,10 @@ async function getProcessActivity(platform = process.platform) {
     processes = sampleWindowsCpu(parseWindowsProcessList(stdout.trim()), performance.now());
   } else if (platform === "linux") {
     processes = await getLinuxProcessActivity();
+    if (!processes.length) processes = await getPsProcessActivity();
   } else if (platform === "darwin") {
-    const [processOutput, topOutput] = await Promise.all([
-      execFileAsync("ps", ["-axo", "pid=,ppid=,%cpu=,rss=,comm="], {
-        timeout: 8000,
-        windowsHide: true,
-        maxBuffer: 4 * 1024 * 1024
-      }),
+    const [psProcesses, topOutput] = await Promise.all([
+      getPsProcessActivity(),
       execFileAsync("top", ["-l", "2", "-n", "1000", "-stats", "pid,cpu"], {
         timeout: 8000,
         windowsHide: true,
@@ -207,7 +215,7 @@ async function getProcessActivity(platform = process.platform) {
       })
     ]);
     const cpuByPid = parseMacTopCpu(topOutput.stdout);
-    processes = parseUnixProcessList(processOutput.stdout).map(({ pid, ...item }) => ({
+    processes = psProcesses.map(({ pid, ...item }) => ({
       ...item,
       cpuPercent: cpuByPid.get(pid) ?? null
     }));
