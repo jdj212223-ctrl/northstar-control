@@ -14,7 +14,7 @@ use serde_json::json;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use util::{ConfirmFn, ConfirmRequest, Json};
 
@@ -28,8 +28,6 @@ struct AppState {
     confirm: ConfirmFn,
     app: AppHandle,
 }
-
-type Shared<'a> = State<'a, Arc<AppState>>;
 
 fn make_confirm(app: AppHandle) -> ConfirmFn {
     Arc::new(move |request: ConfirmRequest| {
@@ -89,17 +87,20 @@ async fn set_power_profile(profile: String) -> Json {
 }
 
 #[tauri::command]
-async fn set_charge_limit(enabled: bool, state: Shared<'_>) -> Json {
+async fn set_charge_limit(enabled: bool, app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     system::set_charge_limit(enabled, &state.confirm).await
 }
 
 #[tauri::command]
-async fn set_fan_profile(profile: String, state: Shared<'_>) -> Json {
+async fn set_fan_profile(profile: String, app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     system::set_fan_profile(&profile, &state.confirm).await
 }
 
 #[tauri::command]
-async fn request_hardware_access(state: Shared<'_>) -> Json {
+async fn request_hardware_access(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     if util::is_mac() {
         let status = helper::get_status().await;
         let (message, detail) = helper::access_message(&status);
@@ -120,12 +121,14 @@ async fn request_hardware_access(state: Shared<'_>) -> Json {
 }
 
 #[tauri::command]
-async fn fan_smart_state(state: Shared<'_>) -> Json {
+async fn fan_smart_state(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.smart_fan.state().await
 }
 
 #[tauri::command]
-async fn fan_smart_set(enabled: bool, state: Shared<'_>) -> Json {
+async fn fan_smart_set(enabled: bool, app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.smart_fan.set(enabled, state.confirm.clone()).await
 }
 
@@ -140,13 +143,15 @@ async fn bench_gpus() -> Json {
 }
 
 #[tauri::command]
-async fn bench_cancel(state: Shared<'_>) -> Result<(), String> {
+async fn bench_cancel(app_handle: AppHandle) -> Result<(), String> {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.bench_cancel.store(true, Ordering::Relaxed);
     Ok(())
 }
 
 #[tauri::command]
-async fn bench_run(request: Json, state: Shared<'_>) -> Result<Json, String> {
+async fn bench_run(request: Json, app_handle: AppHandle) -> Result<Json, String> {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     if state.bench_running.swap(true, Ordering::SeqCst) {
         return Ok(json!({"ok": false, "reason": "busy"}));
     }
@@ -196,17 +201,20 @@ async fn run_benchmark(kind: &str, request: &Json, state: &Arc<AppState>) -> Jso
 }
 
 #[tauri::command]
-async fn update_state(state: Shared<'_>) -> Json {
+async fn update_state(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.updater.get_state().await
 }
 
 #[tauri::command]
-async fn update_check(state: Shared<'_>) -> Json {
+async fn update_check(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.updater.check().await
 }
 
 #[tauri::command]
-async fn update_open(state: Shared<'_>) -> Result<(), String> {
+async fn update_open(app_handle: AppHandle) -> Result<(), String> {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     if let Some(url) = state.updater.release_url().await {
         util::open_https(&url);
     }
@@ -214,7 +222,8 @@ async fn update_open(state: Shared<'_>) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn update_install(state: Shared<'_>) -> Json {
+async fn update_install(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     let app = state.app.clone();
     let quit: Box<dyn FnOnce() + Send> = Box::new(move || {
         std::thread::spawn(move || {
@@ -226,12 +235,14 @@ async fn update_install(state: Shared<'_>) -> Json {
 }
 
 #[tauri::command]
-async fn remote_status(state: Shared<'_>) -> Json {
+async fn remote_status(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.remote.status().await
 }
 
 #[tauri::command]
-async fn remote_pair(options: Json, state: Shared<'_>) -> Json {
+async fn remote_pair(options: Json, app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     if !options.is_object() {
         return json!({"ok": false, "reason": "invalid-pairing-request"});
     }
@@ -240,37 +251,44 @@ async fn remote_pair(options: Json, state: Shared<'_>) -> Json {
 }
 
 #[tauri::command]
-async fn remote_unpair(state: Shared<'_>) -> Json {
+async fn remote_unpair(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.remote.unpair().await
 }
 
 #[tauri::command]
-async fn github_status(state: Shared<'_>) -> Json {
+async fn github_status(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.github.get_status().await
 }
 
 #[tauri::command]
-async fn github_save_client_id(client_id: String, state: Shared<'_>) -> Json {
+async fn github_save_client_id(client_id: String, app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.github.save_client_id(&client_id).await
 }
 
 #[tauri::command]
-async fn github_begin(state: Shared<'_>) -> Json {
+async fn github_begin(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.github.begin().await
 }
 
 #[tauri::command]
-async fn github_poll(state: Shared<'_>) -> Json {
+async fn github_poll(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.github.poll().await
 }
 
 #[tauri::command]
-async fn github_cancel(state: Shared<'_>) -> Json {
+async fn github_cancel(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.github.cancel().await
 }
 
 #[tauri::command]
-async fn github_sign_out(state: Shared<'_>) -> Json {
+async fn github_sign_out(app_handle: AppHandle) -> Json {
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.github.sign_out().await
 }
 
