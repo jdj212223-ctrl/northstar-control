@@ -60,6 +60,9 @@ button:focus-visible, a:focus-visible, input:focus-visible + span { outline: 2px
 .breadcrumb strong { color: #c8cbd3; font-weight: 500; }
 .topbar-right { display: flex; align-items: center; gap: 17px; }
 .preview-pill, .demo-chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #3c3c2c; border-radius: 20px; color: #d7cc91; font: 9px "DM Mono", monospace; letter-spacing: .8px; }
+.update-pill { padding: 5px 11px; border: 1px solid #e9c978; border-radius: 20px; background: #e9c978; color: #1a1a12; font: 600 10px "DM Mono", monospace; letter-spacing: .6px; cursor: pointer; }
+.update-pill:hover { background: #f3d994; }
+.update-pill[hidden] { display: none; }
 .preview-pill { padding: 5px 9px; }
 .preview-pill > span:first-child { width: 5px; height: 5px; flex: 0 0 auto; border-radius: 50%; background: #e9c978; }
 .icon-button { width: 22px; height: 22px; border: 1px solid #3c424e; border-radius: 50%; background: transparent; color: #a7adb8; font: 11px Georgia, serif; cursor: pointer; }

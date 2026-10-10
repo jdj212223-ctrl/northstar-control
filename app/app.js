@@ -34,6 +34,18 @@
   document.getElementById("connection-label").textContent = nativeApp ? "Connecting…" : "Desktop app required";
   document.getElementById("settings-platform").textContent = platform;
   document.getElementById("device-name").textContent = platform === "macOS" ? "This Mac" : platform === "Windows" ? "This PC" : platform === "Linux" ? "This Linux computer" : "Your computer";
+  if (nativeApp && window.northstar.update) {
+    const pill = document.getElementById("update-pill");
+    const renderUpdate = (state) => {
+      if (!state || !state.available) { pill.hidden = true; return; }
+      pill.textContent = `Update available · v${state.version}`;
+      pill.title = "Open the Northstar Control release page to download the update";
+      pill.hidden = false;
+    };
+    pill.addEventListener("click", () => window.northstar.update.openRelease());
+    window.northstar.update.onChange(renderUpdate);
+    window.northstar.update.getState().then(renderUpdate).catch(() => {});
+  }
   if (!nativeApp) {
     document.getElementById("remote-pair-button").disabled = true;
     document.getElementById("remote-device-status").textContent = "Launch the Northstar desktop app to pair this computer.";

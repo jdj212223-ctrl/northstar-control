@@ -13,6 +13,7 @@ const { createGitHubAuth } = require("./github-auth.cjs");
 const { createRemoteAgent } = require("./remote-agent.cjs");
 const { createMacHardwareHelper } = require("./mac-hardware-helper.cjs");
 const { getProcessActivity } = require("./activity-monitor.cjs");
+const { createUpdater, RELEASE_PREFIX } = require("./updater.cjs");
 
 const execFileAsync = promisify(execFile);
 const powerPlanIds = Object.freeze({
@@ -28,6 +29,7 @@ const profilesById = Object.freeze({
 const validProfiles = new Set(["Efficiency", "Balanced", "Performance"]);
 let githubAuth;
 let remoteAgent;
+let updater;
 const windowsSystemRoot = process.env.SystemRoot || "C:\\Windows";
 const windowsPowerCfg = path.join(windowsSystemRoot, "System32", "powercfg.exe");
 const windowsPowerShell = path.join(windowsSystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -502,6 +504,13 @@ function registerIpc() {
   ipcMain.handle("github:poll", (event) => { assertLocalRenderer(event); return githubAuth.poll(); });
   ipcMain.handle("github:cancel", (event) => { assertLocalRenderer(event); return githubAuth.cancel(); });
   ipcMain.handle("github:sign-out", (event) => { assertLocalRenderer(event); return githubAuth.signOut(); });
+  ipcMain.handle("update:state", (event) => { assertLocalRenderer(event); return updater.getState(); });
+  ipcMain.handle("update:check", (event) => { assertLocalRenderer(event); return updater.check(); });
+  ipcMain.handle("update:open", async (event) => {
+    assertLocalRenderer(event);
+    const { url } = updater.getState();
+    if (url && url.startsWith(RELEASE_PREFIX)) await shell.openExternal(url);
+  });
   ipcMain.handle("github:open-registration", async (event) => {
     assertLocalRenderer(event);
     await shell.openExternal("https://github.com/settings/developers");
@@ -549,11 +558,18 @@ if (isElectron) {
         return result.response === 1;
       }
     });
+    updater = createUpdater({
+      currentVersion: app.getVersion(),
+      onChange: (state) => {
+        for (const window of BrowserWindow.getAllWindows()) window.webContents.send("update:changed", state);
+      }
+    });
     void remoteAgent.start().catch((error) => {
       console.error("Could not restore the Northstar remote-device connection:", error.message);
     });
     registerIpc();
     createWindow();
+    updater.start();
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });

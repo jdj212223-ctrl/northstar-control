@@ -10,6 +10,15 @@ contextBridge.exposeInMainWorld("northstar", Object.freeze({
   setChargeLimit: (enabled) => ipcRenderer.invoke("system:set-charge-limit", enabled),
   setFanProfile: (profile) => ipcRenderer.invoke("system:set-fan-profile", profile),
   requestHardwareAccess: () => ipcRenderer.invoke("system:request-hardware-access"),
+  update: Object.freeze({
+    getState: () => ipcRenderer.invoke("update:state"),
+    check: () => ipcRenderer.invoke("update:check"),
+    openRelease: () => ipcRenderer.invoke("update:open"),
+    onChange: (callback) => {
+      if (typeof callback !== "function") return;
+      ipcRenderer.on("update:changed", (_event, state) => callback(state));
+    }
+  }),
   remote: Object.freeze({
     getStatus: () => ipcRenderer.invoke("remote:status"),
     pair: (options) => ipcRenderer.invoke("remote:pair", options),
