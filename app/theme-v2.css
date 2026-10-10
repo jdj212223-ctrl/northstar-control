@@ -163,3 +163,15 @@ h2 { font: 700 18px var(--font); letter-spacing: -.3px; }
   .main-content { margin-left: 0; padding: 0 18px 30px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Drive health */
+.ssd-list { display: grid; gap: 20px; }
+.ssd-card { display: grid; gap: 18px; }
+.ssd-badge { padding: 5px 12px; border-radius: 20px; font: 700 12px var(--font); background: rgba(123, 230, 166, .15); color: var(--green); white-space: nowrap; }
+.ssd-fair { background: rgba(255, 210, 120, .15); color: #ffd278; }
+.ssd-worn, .ssd-replace-soon, .ssd-attention { background: rgba(255, 120, 120, .15); color: #ff8f8f; }
+.ssd-gauge { display: flex; align-items: center; gap: 24px; }
+.ssd-score strong { display: block; font: 800 56px/1 var(--font); letter-spacing: -2.5px; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ssd-score span { color: var(--muted); font: 600 11px var(--mono); letter-spacing: 1.2px; }
+.ssd-track { flex: 1; height: 14px; border-radius: 10px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.ssd-track i { display: block; height: 100%; border-radius: 10px; background: var(--grad); transition: width .6s ease; }

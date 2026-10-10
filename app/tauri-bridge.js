@@ -23,6 +23,9 @@
       getState: () => invoke("fan_smart_state"),
       set: (enabled) => invoke("fan_smart_set", { enabled })
     }),
+    ssd: Object.freeze({
+      health: () => invoke("ssd_health")
+    }),
     bench: Object.freeze({
       volumes: () => invoke("bench_volumes"),
       gpus: () => invoke("bench_gpus"),

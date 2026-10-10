@@ -254,3 +254,7 @@ The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professiona
 - **Smart cooling** (macOS with the smctl helper): switches between Quiet and Automatic using temperature, with hysteresis and a hold time, and returns to Automatic when turned off, when hot, or on quit.
 - **Activity monitor**: filter, pause, usage bars, and real power draw (macOS with smctl).
 - Clock tuning / overclocking is still not offered: no safe, validated backend exists, and this app makes no clock or voltage changes.
+
+## Drive health (2.2)
+
+Reads the SSD's SMART counters through `smartctl` (smartmontools) and shows total data written, wear, estimated years left and a health score. When the drive reports its own wear (NVMe "percentage used", SATA wear attributes) that is the score; otherwise health is estimated from bytes written against a typical ~600 TBW per TB of capacity, which is labelled as an estimate. Windows falls back to the storage reliability counters (wear only). Apple Silicon, NVMe and SATA SSDs are supported; hard disks are skipped.

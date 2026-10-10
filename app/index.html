@@ -12,6 +12,7 @@
     <script src="tauri-bridge.js"></script>
     <script src="app.js" defer></script>
     <script src="bench.js" defer></script>
+    <script src="ssd.js" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -29,6 +30,7 @@
           <button class="nav-item" data-view="power"><span class="nav-icon">ϟ</span>Power &amp; battery</button>
           <button class="nav-item" data-view="performance"><span class="nav-icon">⌁</span>Performance</button>
           <button class="nav-item" data-view="benchmark"><span class="nav-icon">◴</span>Benchmark<span class="nav-badge nav-new">NEW</span></button>
+          <button class="nav-item" data-view="ssd"><span class="nav-icon">◉</span>Drive health<span class="nav-badge nav-new">NEW</span></button>
           <button class="nav-item" data-view="devices"><span class="nav-icon">⠿</span>Devices &amp; USB</button>
         </nav>
 
@@ -237,6 +239,13 @@
           </div>
         </section>
 
+
+        <section class="page-view detail-view" id="view-ssd">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> DRIVE HEALTH</div><h1>How much life is <em>left?</em></h1><p class="page-subtitle">Reads the SSD's own SMART counters — how much has been written and how worn it is — and turns them into a health score.</p></div><button class="button button-secondary" id="ssd-refresh" type="button">↻ Re-read drives</button></div>
+          <div id="ssd-list" class="ssd-list" aria-live="polite"><div class="panel bench-empty">Open the desktop app to read drive health.</div></div>
+          <p class="fine-print" id="ssd-note"></p>
+        </section>
+
         <section class="page-view detail-view" id="view-devices">
           <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> CONNECTED HARDWARE</div><h1>Devices, at a glance.</h1><p class="page-subtitle">See what's connected. Power control depends on your USB controller.</p></div><span class="demo-chip">SYSTEM DISCOVERY</span></div>
           <section class="panel devices-panel"><div class="panel-heading"><div><h2>USB devices</h2><p id="device-count">Reading connected devices…</p></div><button class="button button-secondary" id="scan-button">↻ Refresh devices</button></div><div id="device-list" aria-live="polite"><div class="empty-devices">Loading devices from this computer…</div></div><div class="helper-banner"><span class="helper-icon">⌑</span><div><strong>USB power switching is not enabled</strong><p>USB controllers differ. Safe power control needs controller-specific support and authorization.</p></div><button class="button button-secondary" data-helper>Learn more</button></div></section>
@@ -267,7 +276,7 @@
             <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
         </section>
 
-        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.1.0</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
+        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.2.0</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
       </main>
     </div>
 

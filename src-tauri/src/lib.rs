@@ -5,6 +5,7 @@ mod fan;
 mod github;
 mod helper;
 mod remote;
+mod ssd;
 mod store;
 mod system;
 mod updater;
@@ -130,6 +131,11 @@ async fn fan_smart_state(app_handle: AppHandle) -> Json {
 async fn fan_smart_set(enabled: bool, app_handle: AppHandle) -> Json {
     let state = app_handle.state::<Arc<AppState>>().inner().clone();
     state.smart_fan.set(enabled, state.confirm.clone()).await
+}
+
+#[tauri::command]
+async fn ssd_health() -> Json {
+    ssd::get_ssd_health().await
 }
 
 #[tauri::command]
@@ -319,6 +325,7 @@ pub fn run() {
             request_hardware_access,
             fan_smart_state,
             fan_smart_set,
+            ssd_health,
             bench_volumes,
             bench_gpus,
             bench_run,

@@ -100,7 +100,7 @@
     if (!target) return;
     views.forEach((view) => view.classList.toggle("active", view === target));
     navItems.forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-    const breadcrumbNames = { power: "Power & battery", activity: "Activity monitor" };
+    const breadcrumbNames = { power: "Power & battery", activity: "Activity monitor", ssd: "Drive health" };
     document.getElementById("breadcrumb-current").textContent = breadcrumbNames[name] || name[0].toUpperCase() + name.slice(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (name === "activity") refreshActivity();
