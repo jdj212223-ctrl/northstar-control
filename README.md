@@ -257,4 +257,4 @@ The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professiona
 
 ## Drive health (2.2)
 
-Reads the SSD's SMART counters through `smartctl` (smartmontools) and shows total data written, wear, estimated years left and a health score. When the drive reports its own wear (NVMe "percentage used", SATA wear attributes) that is the score; otherwise health is estimated from bytes written against a typical ~600 TBW per TB of capacity, which is labelled as an estimate. Windows falls back to the storage reliability counters (wear only). Apple Silicon, NVMe and SATA SSDs are supported; hard disks are skipped.
+Reads the SSD's SMART counters through `smartctl` (smartmontools) and shows total data written, wear and estimated years left. The headline score (1–100) is calculated from the total bytes ever written compared with a typical ~600 TBW per TB of capacity (an estimate); the drive's own wear reading is shown alongside, and is used alone only when write totals are unavailable. Windows falls back to the storage reliability counters (wear only). Apple Silicon, NVMe and SATA SSDs are supported; hard disks are skipped.

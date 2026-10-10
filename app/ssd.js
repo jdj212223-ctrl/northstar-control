@@ -31,7 +31,7 @@
 
     const gauge = make("div", "ssd-gauge");
     const score = make("div", "ssd-score");
-    score.append(make("strong", "", drive.healthPercent == null ? "—" : `${fmt(drive.healthPercent)}%`), make("span", "", "HEALTH"));
+    score.append(make("strong", "", drive.healthPercent == null ? "—" : fmt(drive.healthPercent)), make("span", "", "/ 100"));
     const track = make("div", "ssd-track");
     const fill = make("i");
     fill.style.width = `${Math.max(0, Math.min(100, drive.healthPercent ?? 0))}%`;
@@ -48,12 +48,12 @@
     const extra = [];
     if (drive.availableSparePercent != null) extra.push(`Spare blocks ${fmt(drive.availableSparePercent)}%`);
     if (drive.mediaErrors != null) extra.push(`Media errors ${fmt(drive.mediaErrors)}`);
-    if (drive.estimatedHealthPercent != null && drive.healthSource === "drive") extra.push(`Write-based estimate ${fmt(drive.estimatedHealthPercent)}%`);
+    if (drive.driveHealthPercent != null && drive.healthSource === "writes") extra.push(`Drive's own wear reading ${fmt(drive.driveHealthPercent)}/100`);
 
-    const source = drive.healthSource === "drive"
-      ? "Health comes from the drive's own wear indicator (100% − wear)."
-      : drive.healthSource === "estimate"
-        ? "This drive doesn't report wear, so health is estimated: bytes written compared with a typical ~600 TBW per TB of capacity. Your drive's real rating may differ."
+    const source = drive.healthSource === "writes"
+      ? "Score (1–100) = all data ever written to the drive, compared with a typical ~600 TBW per TB of capacity. It is an estimate; your drive's real rating may differ."
+      : drive.healthSource === "drive"
+        ? "Score comes from the drive's own wear indicator (100 − wear)."
         : "Not enough data to score this drive.";
     panel.append(head, gauge, stats, make("p", "fine-print", [...extra, source].join(" · ")));
     return panel;

@@ -120,8 +120,9 @@ pub fn build_report(
         _ => None,
     };
     let reported = drive_used.map(|used| (100.0 - used).clamp(0.0, 100.0));
-    let health = reported.or(estimated);
-    let source = if reported.is_some() { "drive" } else if estimated.is_some() { "estimate" } else { "none" };
+    // The headline score is computed from total data written; the drive's own wear is secondary.
+    let health = estimated.map(|value| value.round().clamp(1.0, 100.0)).or(reported);
+    let source = if estimated.is_some() { "writes" } else if reported.is_some() { "drive" } else { "none" };
 
     // Years left at the average write rate since the drive was new.
     let years_left = match (written_tb, rated_tbw, power_on_hours) {
@@ -150,6 +151,7 @@ pub fn build_report(
         "healthPercent": health.map(|value| value.round()),
         "healthSource": source,
         "estimatedHealthPercent": estimated.map(|value| value.round()),
+        "driveHealthPercent": reported.map(|value| value.round()),
         "driveWearPercent": drive_used,
         "availableSparePercent": spare,
         "powerOnHours": power_on_hours,
@@ -268,10 +270,11 @@ mod tests {
         });
         let report = parse_smartctl(&info, None).unwrap();
         assert_eq!(report["writtenTB"], json!(56.9));
-        assert_eq!(report["healthPercent"], json!(96.0));
-        assert_eq!(report["healthSource"], json!("drive"));
+        assert_eq!(report["healthPercent"], json!(63.0)); // 100 - 56.9/154 written
+        assert_eq!(report["driveHealthPercent"], json!(96.0));
+        assert_eq!(report["healthSource"], json!("writes"));
         assert_eq!(report["ratedTBW"], json!(154.0)); // 256 GB class
-        assert_eq!(report["status"], json!("Good"));
+        assert_eq!(report["status"], json!("Fair"));
     }
 
     #[test]
@@ -286,7 +289,7 @@ mod tests {
             ] }
         });
         let report = parse_smartctl(&info, None).unwrap();
-        assert_eq!(report["healthSource"], json!("estimate"));
+        assert_eq!(report["healthSource"], json!("writes"));
         assert_eq!(report["writtenTB"], json!(153.6));
         // 512 GB class → 307 TBW rated; 153.6 written → about half left.
         assert_eq!(report["healthPercent"], json!(50.0));
