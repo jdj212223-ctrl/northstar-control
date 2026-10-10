@@ -8,7 +8,9 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'; connect-src 'none'; form-action 'none'">
     <title>Northstar Control</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="theme-v2.css">
     <script src="app.js" defer></script>
+    <script src="bench.js" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -25,6 +27,7 @@
           <button class="nav-item" data-view="cooling"><span class="nav-icon">◌</span>Cooling<span class="nav-badge">3</span></button>
           <button class="nav-item" data-view="power"><span class="nav-icon">ϟ</span>Power &amp; battery</button>
           <button class="nav-item" data-view="performance"><span class="nav-icon">⌁</span>Performance</button>
+          <button class="nav-item" data-view="benchmark"><span class="nav-icon">◴</span>Benchmark<span class="nav-badge nav-new">NEW</span></button>
           <button class="nav-item" data-view="devices"><span class="nav-icon">⠿</span>Devices &amp; USB</button>
         </nav>
 
@@ -144,7 +147,7 @@
           <div class="activity-summary-grid">
             <article class="activity-summary-card"><span>CPU · iCPU / SoC</span><strong id="activity-cpu">—</strong><small>System-wide load</small></article>
             <article class="activity-summary-card unavailable"><span>GPU · iGPU / dGPU / SoC</span><strong>—</strong><small>Driver counter unavailable</small></article>
-            <article class="activity-summary-card unavailable"><span>POWER USAGE</span><strong>—</strong><small>Wattage unavailable</small></article>
+            <article class="activity-summary-card" id="activity-power-card"><span>POWER USAGE</span><strong id="activity-power">—</strong><small id="activity-power-detail">Wattage unavailable</small></article>
             <article class="activity-summary-card"><span>BATTERY</span><strong id="activity-battery">—</strong><small id="activity-battery-detail">Battery telemetry unavailable</small></article>
             <article class="activity-summary-card"><span>MEMORY</span><strong id="activity-memory">—</strong><small id="activity-memory-detail">System memory in use</small></article>
             <article class="activity-summary-card unavailable"><span>FPS</span><strong>—</strong><small>App-specific; not reported</small></article>
@@ -158,6 +161,7 @@
               <button class="activity-category" type="button" data-activity-metric="memory" aria-pressed="false">Memory</button>
               <button class="activity-category" type="button" data-activity-metric="fps" aria-pressed="false">FPS</button>
             </div>
+            <div class="activity-toolbar"><input type="search" id="activity-search" placeholder="Filter apps and commands…" aria-label="Filter processes" maxlength="60" autocomplete="off"><button class="button button-secondary" id="activity-pause" type="button" aria-pressed="false">Pause</button><span class="activity-count" id="activity-count"></span></div>
             <p class="activity-capability-note" id="activity-capability-note">CPU readings include OS-reported iCPU and SoC work. Command arguments are hidden to avoid exposing secrets.</p>
             <div class="activity-table-wrap" id="activity-table-wrap">
               <table class="activity-table">
@@ -176,9 +180,10 @@
               <div class="fan-reading"><div class="fan-visual large-fan" aria-hidden="true"><div class="fan-ring"><div class="fan-blades"></div><div class="fan-hub"></div></div></div><div><strong id="detail-rpm">— <small>RPM</small></strong><span id="detail-fan-description">Fan telemetry unavailable</span></div></div>
               <div class="setting-label"><div><strong>Cooling profile</strong><span>Automatic cooling is recommended. Quiet mode may reduce fan response.</span></div></div>
               <div class="choice-grid" id="fan-choices"><button class="choice-card selected" data-fan="Auto"><span>◌</span><strong>Auto</strong><small>Follow Apple's automatic fan control</small></button><button class="choice-card" data-fan="Quiet"><span>◖</span><strong>Quiet</strong><small>Lower fan noise; may reduce cooling</small></button></div>
+              <div class="setting-row smart-row"><div><strong>Smart cooling <em class="new-tag">NEW</em></strong><span id="smart-fan-copy">Switches between Quiet and Automatic using temperature, with a safety margin so the fan never flaps. macOS helper required.</span></div><label class="switch"><input type="checkbox" id="smart-fan-toggle"><span></span></label></div>
               <div class="helper-banner"><span class="helper-icon">⌑</span><div><strong id="helper-title">Hardware service required</strong><p id="helper-copy">Fan changes need supported hardware and an authorized platform service.</p></div><button class="button button-secondary" id="helper-button">Request access</button></div>
             </section>
-            <section class="panel temp-panel"><div class="panel-heading"><div><h2>Temperature</h2><p>Detected system sensors</p></div></div><div class="temp-row"><span class="sensor-icon">◉</span><div class="sensor-copy"><strong>CPU / system thermal zone</strong><span>Sensor availability varies by OS</span></div><strong class="sensor-temp" id="detail-temperature">—<small>°C</small></strong><div class="sensor-bar"><i id="temperature-meter" style="width:0%"></i></div></div><div class="thermal-footnote"><span>ⓘ</span> Missing sensor support means no readings are shown.</div></section>
+            <section class="panel temp-panel"><div class="panel-heading"><div><h2>Temperature</h2><p>Detected system sensors</p></div></div><div class="temp-row"><span class="sensor-icon">◉</span><div class="sensor-copy"><strong>CPU / system thermal zone</strong><span>Sensor availability varies by OS</span></div><strong class="sensor-temp" id="detail-temperature">—<small>°C</small></strong><div class="sensor-bar"><i id="temperature-meter" style="width:0%"></i></div></div><div class="temp-row"><span class="sensor-icon">ϟ</span><div class="sensor-copy"><strong>Package power</strong><span>Reported by the SoC</span></div><strong class="sensor-temp" id="detail-power">—<small>W</small></strong></div><div class="temp-row"><span class="sensor-icon">◈</span><div class="sensor-copy"><strong>Thermal pressure</strong><span>How hard the system is throttling</span></div><strong class="sensor-temp" id="detail-pressure">—</strong></div><div class="thermal-footnote"><span>ⓘ</span> Missing sensor support means no readings are shown.</div></section>
           </div>
         </section>
 
@@ -198,6 +203,36 @@
           <div class="detail-grid">
             <section class="panel detail-primary"><div class="panel-heading"><div><h2>Workload profile</h2><p>System power modes depend on your operating system.</p></div><span class="icon-disc">⌁</span></div><div class="profile-options"><button class="profile-option selected" data-profile="Balanced"><span class="profile-orbit">✳</span><span><strong>Balanced</strong><small>Recommended for most tasks.</small></span><i>✓</i></button><button class="profile-option" data-profile="Efficiency"><span class="profile-orbit efficiency">⌁</span><span><strong>Efficiency</strong><small>Prioritize lower power use.</small></span><i>✓</i></button><button class="profile-option" data-profile="Performance"><span class="profile-orbit performance">↗</span><span><strong>Performance</strong><small>Prioritize peak responsiveness.</small></span><i>✓</i></button></div><div class="helper-banner"><span class="helper-icon">⌑</span><div><strong>Advanced system controls are limited</strong><p>Power profiles are applied through the OS where supported. Fan, USB power, and clock tuning need additional hardware-specific services.</p></div><button class="button button-secondary" data-helper>Learn more</button></div></section>
             <section class="panel overclock-panel"><div class="panel-heading"><div><h2>Clock tuning</h2><p>Windows &amp; Linux only · supported hardware only.</p></div><span class="lock-icon">⌑</span></div><div class="locked-state" id="overclock-locked"><div class="lock-illustration">⌑</div><strong id="overclock-state-title">No validated tuner available</strong><p id="overclock-state-copy">Clock tuning is not exposed without a vendor- and device-specific backend that can enforce thermal, electrical, and stability limits. No clock or voltage changes are made by this app.</p></div><div class="supported-os"><span class="platform-chip win-chip">⊞ Windows</span><span class="platform-chip linux-chip">◈ Linux</span><span>Not available on macOS</span></div></section>
+          </div>
+        </section>
+
+
+        <section class="page-view detail-view" id="view-benchmark">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> BENCHMARK</div><h1>Know your <em>real speed.</em></h1><p class="page-subtitle">Measure the processor, memory, graphics and any drive — including USB sticks. Everything runs locally.</p></div><div class="bench-actions"><button class="button button-secondary" id="bench-cancel" type="button" hidden>Stop</button><button class="button button-primary" id="bench-all" type="button">Run CPU + memory + GPU</button></div></div>
+          <div class="bench-grid">
+            <article class="panel bench-card" data-bench="cpu">
+              <div class="panel-heading"><div><h2>Processor</h2><p id="bench-cpu-model">CPU / iCPU · single and multi-core</p></div><button class="button button-small" data-run="cpu" type="button">Run</button></div>
+              <div class="bench-result" id="bench-cpu-result"><div class="bench-empty">Not run yet</div></div>
+              <div class="bench-bar"><i></i></div>
+            </article>
+            <article class="panel bench-card" data-bench="memory">
+              <div class="panel-heading"><div><h2>Memory</h2><p>Copy bandwidth</p></div><button class="button button-small" data-run="memory" type="button">Run</button></div>
+              <div class="bench-result" id="bench-memory-result"><div class="bench-empty">Not run yet</div></div>
+              <div class="bench-bar"><i></i></div>
+            </article>
+            <article class="panel bench-card" data-bench="gpu">
+              <div class="panel-heading"><div><h2>Graphics</h2><p id="bench-gpu-name">GPU / iGPU · shader throughput</p></div><button class="button button-small" data-run="gpu" type="button">Run</button></div>
+              <div class="bench-result" id="bench-gpu-result"><div class="bench-empty">Not run yet</div></div>
+              <ul class="bench-adapters" id="bench-gpu-list"></ul>
+              <div class="bench-bar"><i></i></div>
+            </article>
+            <article class="panel bench-card" data-bench="disk">
+              <div class="panel-heading"><div><h2>Storage &amp; USB</h2><p>SSD, HDD or USB drive · sequential speed</p></div><button class="button button-small" data-run="disk" type="button">Run</button></div>
+              <div class="bench-controls"><label>Drive<select id="bench-volume" aria-label="Drive to test"></select></label><label>Test size<select id="bench-size" aria-label="Test size"><option value="64">64 MB (quick)</option><option value="256" selected>256 MB</option><option value="1024">1 GB (accurate)</option></select></label></div>
+              <div class="bench-result" id="bench-disk-result"><div class="bench-empty">Pick a drive and press Run</div></div>
+              <p class="fine-print">Writes one temporary file to the drive and deletes it. Read speed can be optimistic because the OS may cache it.</p>
+              <div class="bench-bar"><i></i></div>
+            </article>
           </div>
         </section>
 
@@ -231,7 +266,7 @@
             <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
         </section>
 
-        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 1.2.10</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
+        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.0.0</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
       </main>
     </div>
 

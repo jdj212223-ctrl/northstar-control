@@ -10,6 +10,20 @@ contextBridge.exposeInMainWorld("northstar", Object.freeze({
   setChargeLimit: (enabled) => ipcRenderer.invoke("system:set-charge-limit", enabled),
   setFanProfile: (profile) => ipcRenderer.invoke("system:set-fan-profile", profile),
   requestHardwareAccess: () => ipcRenderer.invoke("system:request-hardware-access"),
+  smartFan: Object.freeze({
+    getState: () => ipcRenderer.invoke("fan:smart-state"),
+    set: (enabled) => ipcRenderer.invoke("fan:smart-set", enabled)
+  }),
+  bench: Object.freeze({
+    volumes: () => ipcRenderer.invoke("bench:volumes"),
+    gpus: () => ipcRenderer.invoke("bench:gpus"),
+    run: (request) => ipcRenderer.invoke("bench:run", request),
+    cancel: () => ipcRenderer.invoke("bench:cancel"),
+    onProgress: (callback) => {
+      if (typeof callback !== "function") return;
+      ipcRenderer.on("bench:progress", (_event, progress) => callback(progress));
+    }
+  }),
   update: Object.freeze({
     getState: () => ipcRenderer.invoke("update:state"),
     check: () => ipcRenderer.invoke("update:check"),

@@ -600,7 +600,21 @@
             ? "No supported battery charge control was reported. This may be a desktop Mac or an unsupported MacBook."
             : "Install the signed smctl helper. Charge limits are available only on supported MacBooks."
         : "This system does not expose a writable battery charge limit to this app.";
+    document.getElementById("detail-power").firstChild.textContent = status.packagePowerW === null || status.packagePowerW === undefined ? "—" : status.packagePowerW.toFixed(1);
+    document.getElementById("detail-pressure").textContent = status.thermalPressure ? status.thermalPressure[0].toUpperCase() + status.thermalPressure.slice(1) : "—";
+    lastPower = { package: status.packagePowerW ?? null, system: status.systemPowerW ?? null };
+    renderPower();
     document.getElementById("updated-label").textContent = `Live · ${new Date().toLocaleTimeString()}`;
+  }
+
+  let lastPower = { package: null, system: null };
+  function renderPower() {
+    const value = document.getElementById("activity-power");
+    if (!value) return;
+    value.textContent = lastPower.system !== null ? `${lastPower.system.toFixed(1)} W` : lastPower.package !== null ? `${lastPower.package.toFixed(1)} W` : "—";
+    document.getElementById("activity-power-detail").textContent = lastPower.package !== null
+      ? `Chip ${lastPower.package.toFixed(1)} W · whole system ${lastPower.system !== null ? `${lastPower.system.toFixed(1)} W` : "n/a"}`
+      : "Wattage unavailable on this system";
   }
 
   function formatUptime(seconds) {
@@ -671,7 +685,9 @@
   function renderActivityProcesses() {
     const list = document.getElementById("activity-process-list");
     list.replaceChildren();
-    const sorted = [...activityProcesses].sort((left, right) => {
+    const query = (document.getElementById("activity-search")?.value || "").trim().toLowerCase();
+    const filtered = query ? activityProcesses.filter((item) => `${item.name} ${item.command}`.toLowerCase().includes(query)) : activityProcesses;
+    const sorted = [...filtered].sort((left, right) => {
       const leftUsage = activityMetric === "memory" ? left.memoryBytes : left.cpuPercent;
       const rightUsage = activityMetric === "memory" ? right.memoryBytes : right.cpuPercent;
       if (!Number.isFinite(leftUsage)) return Number.isFinite(rightUsage) ? 1 : 0;
@@ -688,6 +704,9 @@
       list.append(row);
       return;
     }
+    const countLabel = document.getElementById("activity-count");
+    if (countLabel) countLabel.textContent = `${sorted.length} of ${activityProcesses.length} apps`;
+    const peak = Math.max(1, ...sorted.map((item) => (activityMetric === "memory" ? item.memoryBytes : item.cpuPercent)).filter(Number.isFinite));
     for (const process of sorted.slice(0, 100)) {
       const row = document.createElement("tr");
       const appCell = document.createElement("td");
@@ -706,6 +725,15 @@
       } else {
         usageCell.textContent = Number.isFinite(process.cpuPercent) ? `${process.cpuPercent.toFixed(1)}%` : "Sampling…";
       }
+      const share = activityMetric === "memory" ? process.memoryBytes : process.cpuPercent;
+      if (Number.isFinite(share)) {
+        const bar = document.createElement("div");
+        bar.className = "usage-bar";
+        const fill = document.createElement("i");
+        fill.style.width = `${Math.max(2, Math.min(100, (share / peak) * 100))}%`;
+        bar.append(fill);
+        usageCell.append(bar);
+      }
       const countCell = document.createElement("td");
       countCell.textContent = String(process.processCount);
       row.append(appCell, commandCell, usageCell, countCell);
@@ -719,7 +747,10 @@
     return megabytes >= 1024 ? `${(megabytes / 1024).toFixed(2)} GB` : `${megabytes.toFixed(0)} MB`;
   }
 
+  let activityPaused = false;
+
   async function refreshActivity() {
+    if (activityPaused && activityProcesses.length) return;
     if (!nativeApp) {
       document.getElementById("activity-updated").textContent = "Desktop app required";
       return;
@@ -796,6 +827,29 @@
     refreshStatus();
   });
   document.getElementById("scan-button").addEventListener("click", refreshDevices);
+  document.getElementById("activity-search").addEventListener("input", () => renderActivityProcesses());
+  document.getElementById("activity-pause").addEventListener("click", (event) => {
+    activityPaused = !activityPaused;
+    event.currentTarget.setAttribute("aria-pressed", String(activityPaused));
+    event.currentTarget.textContent = activityPaused ? "Resume" : "Pause";
+  });
+  const smartToggle = document.getElementById("smart-fan-toggle");
+  if (nativeApp && window.northstar.smartFan) {
+    window.northstar.smartFan.getState().then((state) => { smartToggle.checked = state.enabled; smartToggle.disabled = !state.supported; }).catch(() => {});
+    smartToggle.addEventListener("change", async () => {
+      const wanted = smartToggle.checked;
+      const result = await window.northstar.smartFan.set(wanted).catch(() => ({ ok: false }));
+      if (!result.ok) {
+        smartToggle.checked = !wanted;
+        if (result.reason === "helper-not-installed") openAccessDialog("mac");
+        else if (result.reason !== "cancelled") showToast("Smart cooling needs a Mac with the helper and a controllable fan.");
+      } else {
+        showToast(wanted ? "Smart cooling is on." : "Smart cooling is off — fans are back on Automatic.");
+      }
+    });
+  } else {
+    smartToggle.disabled = true;
+  }
   document.getElementById("activity-refresh").addEventListener("click", (event) => {
     event.currentTarget.querySelector(".refresh-icon").animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 420 });
     refreshActivity();

@@ -15,6 +15,8 @@ const { createMacHardwareHelper } = require("./mac-hardware-helper.cjs");
 const { getProcessActivity } = require("./activity-monitor.cjs");
 const { createUpdater, RELEASE_PREFIX } = require("./updater.cjs");
 const { installUpdate } = require("./installer.cjs");
+const { decideFanProfile } = require("./fan-curve.cjs");
+const { benchCpu, benchMemory, benchDisk, listVolumes } = require("./benchmark.cjs");
 
 const execFileAsync = promisify(execFile);
 const powerPlanIds = Object.freeze({
@@ -277,14 +279,15 @@ function getSystemStatus() {
 
 async function readSystemStatus() {
   const macHelper = createMacHardwareHelper();
-  const [battery, sensors, powerProfile, cpuLoad, hardwareControls] = await Promise.all([
+  const [battery, sensors, powerProfile, cpuLoad, hardwareControls, macSensors] = await Promise.all([
     readBattery(),
     process.platform === "linux" ? readLinuxSensors() : Promise.resolve({ temperatureC: null, temperatureSource: null, fanRpm: null, chargeLimit: null, writableChargeLimit: false }),
     readPowerProfile(),
     cpuLoadPercent(),
     process.platform === "darwin"
       ? macHelper.getStatus()
-      : Promise.resolve({ installed: false, daemonAvailable: false, fanAvailable: false, chargeLimitAvailable: false, fanRpm: null, chargeLimit: null })
+      : Promise.resolve({ installed: false, daemonAvailable: false, fanAvailable: false, chargeLimitAvailable: false, fanRpm: null, chargeLimit: null }),
+    process.platform === "darwin" ? macHelper.getSensors().catch(() => null) : Promise.resolve(null)
   ]);
   return {
     platform: platformName(),
@@ -295,7 +298,10 @@ async function readSystemStatus() {
     memoryTotalBytes: os.totalmem(),
     memoryFreeBytes: os.freemem(),
     battery,
-    temperatureC: sensors.temperatureC,
+    temperatureC: macSensors?.temperatureC ?? sensors.temperatureC,
+    packagePowerW: macSensors?.packagePowerW ?? null,
+    systemPowerW: macSensors?.systemPowerW ?? null,
+    thermalPressure: macSensors?.thermalPressure ?? null,
     fanRpm: hardwareControls.fanRpm ?? sensors.fanRpm,
     fanMode: hardwareControls.fanMode ?? null,
     fanMinimumRpm: hardwareControls.fanMinimumRpm ?? null,
@@ -439,6 +445,96 @@ async function setFanProfile(profile) {
   return helper.setFanProfile(profile);
 }
 
+// Smart cooling: automatic Quiet/Auto switching on Macs with the helper. Off by default
+// and restored to Auto when disabled or when the app quits.
+const smartFan = { enabled: false, timer: null, current: "Auto", lastChangeAt: 0, lastReason: "off" };
+
+async function smartFanTick() {
+  try {
+    const helper = createMacHardwareHelper();
+    const [status, sensors] = await Promise.all([helper.getStatus(), helper.getSensors()]);
+    if (!status.fanAvailable || !status.daemonAvailable) { smartFan.lastReason = "fan-unavailable"; return; }
+    if (status.fanProfile) smartFan.current = status.fanProfile;
+    const decision = decideFanProfile({ tempC: sensors?.temperatureC, current: smartFan.current, lastChangeAt: smartFan.lastChangeAt });
+    smartFan.lastReason = decision.reason;
+    if (decision.changed && (await helper.setFanProfile(decision.profile)).ok) {
+      smartFan.current = decision.profile;
+      smartFan.lastChangeAt = Date.now();
+    }
+  } catch { smartFan.lastReason = "error"; }
+}
+
+async function setSmartFan(enabled) {
+  if (typeof enabled !== "boolean") return { ok: false, reason: "invalid-setting" };
+  if (process.platform !== "darwin") return { ok: false, reason: "unsupported" };
+  if (enabled === smartFan.enabled) return { ok: true, enabled };
+  if (enabled) {
+    const status = await createMacHardwareHelper().getStatus();
+    if (!status.fanAvailable) return { ok: false, reason: status.installed ? "helper-or-hardware-unavailable" : "helper-not-installed" };
+    const confirmed = await confirmHardwareChange(
+      "Turn on smart cooling?",
+      "Northstar will switch between Quiet and Automatic fan control based on temperature. It returns to Automatic when turned off, when the Mac gets hot, or when the app quits."
+    );
+    if (!confirmed) return { ok: false, reason: "cancelled" };
+    smartFan.enabled = true;
+    smartFan.lastReason = "starting";
+    await smartFanTick();
+    smartFan.timer = setInterval(smartFanTick, 20000);
+    smartFan.timer.unref?.();
+  } else {
+    await stopSmartFan();
+  }
+  return { ok: true, enabled: smartFan.enabled };
+}
+
+async function stopSmartFan() {
+  if (smartFan.timer) clearInterval(smartFan.timer);
+  const wasEnabled = smartFan.enabled;
+  smartFan.timer = null;
+  smartFan.enabled = false;
+  smartFan.lastReason = "off";
+  if (wasEnabled && smartFan.current !== "Auto") {
+    await createMacHardwareHelper().setFanProfile("Auto").catch(() => {});
+    smartFan.current = "Auto";
+  }
+}
+
+let benchmarkCancelled = false;
+let benchmarkRunning = false;
+
+async function runBenchmark(event, request) {
+  if (benchmarkRunning) return { ok: false, reason: "busy" };
+  const kind = request && request.kind;
+  benchmarkRunning = true;
+  benchmarkCancelled = false;
+  const send = (percent) => { if (!event.sender.isDestroyed()) event.sender.send("bench:progress", { kind, percent }); };
+  try {
+    if (kind === "cpu") return { ok: true, kind, result: await benchCpu() };
+    if (kind === "memory") return { ok: true, kind, result: benchMemory() };
+    if (kind === "disk") {
+      const volumes = await listVolumes();
+      const volume = volumes.find((item) => item.id === request.volume);
+      if (!volume) return { ok: false, reason: "unknown-volume" };
+      await new Promise((resolve) => setImmediate(resolve));
+      return { ok: true, kind, volume: volume.label, result: benchDisk(volume.path, Number(request.sizeMb), { shouldCancel: () => benchmarkCancelled, onProgress: send }) };
+    }
+    return { ok: false, reason: "unknown-benchmark" };
+  } catch (error) {
+    return { ok: false, reason: error.message };
+  } finally {
+    benchmarkRunning = false;
+  }
+}
+
+async function getGpuAdapters() {
+  try {
+    const info = await app.getGPUInfo("basic");
+    return (info.gpuDevice || []).map((device) => ({ vendorId: device.vendorId, deviceId: device.deviceId, active: Boolean(device.active), name: device.deviceString || null, driver: device.driverVersion || null }));
+  } catch {
+    return [];
+  }
+}
+
 function getMacHelperAccessMessage(status) {
   if (status.installed && status.daemonAvailable) {
     const capabilities = [
@@ -467,6 +563,12 @@ function registerIpc() {
     const expected = pathToFileURL(path.join(__dirname, "..", "app", "index.html")).href;
     if (event.senderFrame?.url !== expected) throw new Error("Rejected IPC from an untrusted renderer");
   }
+  ipcMain.handle("fan:smart-state", (event) => { assertLocalRenderer(event); return { enabled: smartFan.enabled, current: smartFan.current, reason: smartFan.lastReason, supported: process.platform === "darwin" }; });
+  ipcMain.handle("fan:smart-set", (event, enabled) => { assertLocalRenderer(event); return setSmartFan(enabled); });
+  ipcMain.handle("bench:volumes", (event) => { assertLocalRenderer(event); return listVolumes(); });
+  ipcMain.handle("bench:gpus", (event) => { assertLocalRenderer(event); return getGpuAdapters(); });
+  ipcMain.handle("bench:run", (event, request) => { assertLocalRenderer(event); return runBenchmark(event, request); });
+  ipcMain.handle("bench:cancel", (event) => { assertLocalRenderer(event); benchmarkCancelled = true; });
   ipcMain.handle("system:activity", (event) => { assertLocalRenderer(event); return getProcessActivity(); });
   ipcMain.handle("system:status", (event) => { assertLocalRenderer(event); return getSystemStatus(); });
   ipcMain.handle("system:devices", (event) => { assertLocalRenderer(event); return getDevices(); });
@@ -634,7 +736,13 @@ if (isElectron) {
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
   });
-  app.on("before-quit", () => remoteAgent?.stop());
+  app.on("before-quit", (event) => {
+    remoteAgent?.stop();
+    if (smartFan.enabled) {
+      event.preventDefault();
+      stopSmartFan().finally(() => app.quit());
+    }
+  });
 }
 
 module.exports = { getSystemStatus, getDevices, getProcessActivity, setPowerProfile, setChargeLimit, setFanProfile, getMacHelperAccessMessage };

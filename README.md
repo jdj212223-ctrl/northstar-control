@@ -99,9 +99,9 @@ ARM64 Linux host. To install a release Flatpak, first set up Flatpak and Flathub
 for your distribution, then use the bundle matching your device architecture:
 
 ```sh
-flatpak install --user ./Northstar.Control-1.2.10-x86_64.flatpak
+flatpak install --user ./Northstar.Control-2.0.0-x86_64.flatpak
 # On ARM64 Linux:
-flatpak install --user ./Northstar.Control-1.2.10-aarch64.flatpak
+flatpak install --user ./Northstar.Control-2.0.0-aarch64.flatpak
 flatpak run org.northstar.control
 ```
 
@@ -235,3 +235,11 @@ licensed under the [MIT License](./LICENSE).
 ## Plans and billing
 
 The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professional (€19) monthly plans, billed through Stripe Checkout. Monitoring and the activity monitor stay free; paid plans unlock remote battery and power-profile commands; Professional also unlocks a remote terminal, which the computer must approve on-device for each 10-minute session. To enable billing on your own server set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/stripe/webhook` for `checkout.session.completed`, `customer.subscription.updated` and `customer.subscription.deleted`.
+
+## What's new in 2.0
+
+- **Aurora redesign** of the whole desktop app.
+- **Benchmark** page: CPU (single/multi-core), memory bandwidth, GPU shader throughput (whichever GPU the system selects, including integrated), and sequential read/write on any drive, including USB sticks. Everything runs locally; the disk test writes one temporary file and deletes it.
+- **Smart cooling** (macOS with the smctl helper): switches between Quiet and Automatic using temperature, with hysteresis and a hold time, and returns to Automatic when turned off, when hot, or on quit.
+- **Activity monitor**: filter, pause, usage bars, and real power draw (macOS with smctl).
+- Clock tuning / overclocking is still not offered: no safe, validated backend exists, and this app makes no clock or voltage changes.

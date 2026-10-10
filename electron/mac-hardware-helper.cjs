@@ -97,7 +97,29 @@ function createMacHardwareHelper(options = {}) {
     }
   }
 
-  return { getStatus, setFanProfile, setChargeLimit };
+  // Read-only; smctl reads these without root or the daemon.
+  async function getSensors() {
+    const executable = executablePath();
+    if (!executable) return null;
+    const [sensorsResult, powerResult] = await Promise.allSettled([
+      run(executable, ["sensors", "--json"]),
+      run(executable, ["power", "status", "--json"])
+    ]);
+    const sensors = sensorsResult.status === "fulfilled" ? parseJson(sensorsResult.value.stdout) : null;
+    const power = powerResult.status === "fulfilled" ? parseJson(powerResult.value.stdout) : null;
+    const temps = (Array.isArray(sensors?.temperatures) ? sensors.temperatures : [])
+      .filter((item) => ["Tp", "Tg"].includes(item.group) && Number.isFinite(item.celsius) && item.celsius > 0 && item.celsius < 130)
+      .map((item) => item.celsius);
+    const finite = (value) => (Number.isFinite(value) ? Number(value.toFixed(2)) : null);
+    return {
+      temperatureC: temps.length ? Math.round(Math.max(...temps)) : null,
+      packagePowerW: finite(power?.packagePowerWatts),
+      systemPowerW: finite(power?.systemPowerWatts),
+      thermalPressure: typeof power?.thermalPressure === "string" ? power.thermalPressure : null
+    };
+  }
+
+  return { getStatus, getSensors, setFanProfile, setChargeLimit };
 }
 
 module.exports = { createMacHardwareHelper };
