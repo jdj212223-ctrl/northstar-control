@@ -5,6 +5,31 @@
   const note = document.getElementById("isolate-note");
   if (!api || !api.isolate || !button || !note) return;
 
+  const lock = document.getElementById("lockdown-toggle");
+  const paint = (active) => {
+    if (!lock) return;
+    lock.setAttribute("aria-pressed", String(active));
+    lock.textContent = active ? "⛨ Isolated — click to reconnect" : "⛨ Isolate app";
+    document.body.classList.toggle("is-isolated", active);
+    if (active) note.textContent = "Northstar is isolated: remote control, GitHub sign-in and updates are cut and blocked. Local monitoring still works.";
+  };
+  if (lock && api.lockdown) {
+    api.lockdown.status().then((s) => paint(Boolean(s && s.active))).catch(() => {});
+    lock.addEventListener("click", async () => {
+      lock.disabled = true;
+      try {
+        const turnOn = lock.getAttribute("aria-pressed") !== "true";
+        const s = await api.lockdown.set(turnOn);
+        paint(Boolean(s && s.active));
+        if (!(s && s.active)) note.textContent = "Reconnected. Remote control, GitHub and updates are available again.";
+      } catch {
+        note.textContent = "Couldn't change isolation.";
+      } finally {
+        lock.disabled = false;
+      }
+    });
+  }
+
   button.addEventListener("click", async () => {
     button.disabled = true;
     note.textContent = "Finding what is hogging the CPU…";

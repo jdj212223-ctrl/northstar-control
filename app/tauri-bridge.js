@@ -15,6 +15,10 @@
     getSystemStatus: () => invoke("system_status"),
     getActivity: () => invoke("system_activity"),
     isolate: () => invoke("system_isolate"),
+    lockdown: {
+      status: () => invoke("lockdown_status"),
+      set: (enabled) => invoke("lockdown_set", { enabled })
+    },
     getDevices: () => invoke("system_devices"),
     setPowerProfile: (profile) => invoke("set_power_profile", { profile }),
     setChargeLimit: (enabled) => invoke("set_charge_limit", { enabled }),

@@ -146,9 +146,9 @@
         <section class="page-view detail-view" id="view-activity">
           <div class="page-heading">
             <div><div class="eyebrow"><span class="eyebrow-line"></span> LIVE PROCESS TELEMETRY</div><h1>See what’s <em>working.</em></h1><p class="page-subtitle">Rank applications by the resources your operating system reports.</p></div>
-            <div class="activity-actions"><button class="button" id="activity-isolate" type="button" title="Lower the priority of apps hogging the CPU so your active app stays smooth">⊘ Isolate</button><button class="button button-secondary" id="activity-refresh"><span class="refresh-icon">↻</span> Refresh activity</button></div>
+            <div class="activity-actions"><button class="button" id="lockdown-toggle" type="button" aria-pressed="false" title="Cut every outside connection of Northstar (remote, GitHub, updates) in case of a breach">⛨ Isolate app</button><button class="button button-secondary" id="activity-isolate" type="button" title="Lower the priority of apps hogging the CPU so your active app stays smooth">Free up CPU</button><button class="button button-secondary" id="activity-refresh"><span class="refresh-icon">↻</span> Refresh activity</button></div>
           </div>
-          <p class="activity-capability-note" id="isolate-note" role="status">Isolate lowers the priority of apps hogging the CPU so your active app and mouse stay smooth. It never touches system processes.</p>
+          <p class="activity-capability-note" id="isolate-note" role="status"><strong>Isolate app</strong> cuts every outside connection Northstar has (remote control, GitHub, updates) and blocks new ones until you turn it off, in case of a breach. <strong>Free up CPU</strong> lowers the priority of apps hogging the CPU. Neither touches system processes.</p>
           <div class="activity-summary-grid">
             <article class="activity-summary-card"><span>CPU · iCPU / SoC</span><strong id="activity-cpu">—</strong><small>System-wide load</small></article>
             <article class="activity-summary-card unavailable"><span>GPU · iGPU / dGPU / SoC</span><strong>—</strong><small>Driver counter unavailable</small></article>
@@ -278,7 +278,7 @@
             <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
         </section>
 
-        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.3.0</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
+        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.4.0</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
       </main>
     </div>
 

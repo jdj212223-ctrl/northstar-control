@@ -177,3 +177,5 @@ h2 { font: 700 18px var(--font); letter-spacing: -.3px; }
 .ssd-track i { display: block; height: 100%; border-radius: 10px; background: var(--grad); transition: width .6s ease; }
 
 .activity-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+#lockdown-toggle[aria-pressed="true"] { background: #ff5d6c; color: #1a0508; }
+body.is-isolated .sidebar { box-shadow: 0 0 0 1px #ff5d6c88, 0 20px 60px rgba(0, 0, 0, .45); }

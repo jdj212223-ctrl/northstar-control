@@ -107,6 +107,9 @@ impl GitHubAuth {
     }
 
     pub async fn begin(&self) -> Json {
+        if crate::lockdown::active() {
+            return crate::lockdown::blocked();
+        }
         let client_id = {
             let mut state = self.state.lock().await;
             Self::load(&mut state);
@@ -169,6 +172,9 @@ impl GitHubAuth {
     }
 
     pub async fn poll(&self) -> Json {
+        if crate::lockdown::active() {
+            return crate::lockdown::blocked();
+        }
         let (client_id, device_code, flow_id) = {
             let mut state = self.state.lock().await;
             Self::load(&mut state);

@@ -255,7 +255,11 @@ The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professiona
 - **Activity monitor**: filter, pause, usage bars, and real power draw (macOS with smctl).
 - Clock tuning / overclocking is still not offered: no safe, validated backend exists, and this app makes no clock or voltage changes.
 
-## Isolate (2.3)
+## Isolate app (2.4)
+
+**Isolate app** (Activity monitor) is a breach kill switch: it drops the remote-control connection and blocks every outside connection Northstar makes (remote pairing, GitHub sign-in, update checks and installs) until you switch it off. It is saved, so it stays on after a restart. Local monitoring keeps working. The former Isolate button is now **Free up CPU**.
+
+## Free up CPU (2.3)
 
 The Activity monitor has an **Isolate** button. It finds user apps hogging the CPU (8%+), skips the active app, the OS and Northstar, and lowers their priority (`renice 15` on macOS/Linux, BelowNormal on Windows) so the foreground and mouse stay smooth. On macOS/Linux the lowered priority lasts until those apps relaunch.
 

@@ -136,7 +136,7 @@ impl RemoteAgent {
         status_of(&state)
     }
 
-    async fn notify(&self) {
+    pub async fn notify(&self) {
         let snapshot = status_of(&*self.state.lock().await);
         (self.on_status)(snapshot);
     }
@@ -144,7 +144,7 @@ impl RemoteAgent {
     pub async fn start(self: &Arc<Self>) -> Json {
         let mut state = self.state.lock().await;
         Self::load(&mut state);
-        if state.device.is_some() && state.task.is_none() {
+        if state.device.is_some() && state.task.is_none() && !crate::lockdown::active() {
             state.task = Some(self.spawn_connection());
         }
         status_of(&state)
@@ -156,6 +156,9 @@ impl RemoteAgent {
     }
 
     pub async fn pair(self: &Arc<Self>, server_url: &str, code: &str, name: &str) -> Json {
+        if crate::lockdown::active() {
+            return crate::lockdown::blocked();
+        }
         {
             let mut state = self.state.lock().await;
             Self::load(&mut state);
@@ -220,6 +223,9 @@ impl RemoteAgent {
     }
 
     pub async fn unpair(&self) -> Json {
+        if crate::lockdown::active() {
+            return crate::lockdown::blocked();
+        }
         let (server_url, token) = {
             let mut state = self.state.lock().await;
             Self::load(&mut state);
@@ -278,6 +284,9 @@ impl RemoteAgent {
     async fn connection_loop(self: Arc<Self>) {
         let mut delay = Duration::from_secs(1);
         loop {
+            if crate::lockdown::active() {
+                return;
+            }
             let Some((server_url, device)) = ({
                 let state = self.state.lock().await;
                 state.device.clone().map(|device| (state.server_url.clone(), device))

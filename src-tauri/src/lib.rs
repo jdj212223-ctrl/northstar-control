@@ -6,6 +6,7 @@ mod github;
 mod helper;
 mod remote;
 mod isolate;
+mod lockdown;
 mod ssd;
 mod store;
 mod system;
@@ -76,6 +77,25 @@ async fn system_status() -> Json {
 #[tauri::command]
 async fn system_activity() -> Result<Json, String> {
     activity::get_process_activity().await
+}
+
+#[tauri::command]
+async fn lockdown_status() -> Json {
+    lockdown::status()
+}
+
+#[tauri::command]
+async fn lockdown_set(enabled: bool, app_handle: AppHandle) -> Json {
+    lockdown::set(enabled);
+    let state = app_handle.state::<Arc<AppState>>().inner().clone();
+    if enabled {
+        // Drop the live remote connection immediately.
+        state.remote.stop().await;
+        state.remote.notify().await;
+    } else {
+        state.remote.start().await;
+    }
+    lockdown::status()
 }
 
 #[tauri::command]
@@ -325,6 +345,8 @@ pub fn run() {
             system_status,
             system_activity,
             system_isolate,
+            lockdown_status,
+            lockdown_set,
             system_devices,
             set_power_profile,
             set_charge_limit,
@@ -391,6 +413,7 @@ pub fn run() {
                 })
                 .build()?;
 
+            lockdown::init();
             let remote = state.remote.clone();
             tauri::async_runtime::spawn(async move {
                 remote.start().await;

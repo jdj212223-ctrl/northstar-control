@@ -83,6 +83,9 @@ impl Updater {
     }
 
     pub async fn check(&self) -> Json {
+        if crate::lockdown::active() {
+            return self.get_state().await;
+        }
         let current = {
             let mut state = self.state.lock().await;
             state["checking"] = json!(true);
@@ -134,6 +137,9 @@ impl Updater {
     }
 
     pub async fn install(&self, quit: Box<dyn FnOnce() + Send>) -> Json {
+        if crate::lockdown::active() {
+            return crate::lockdown::blocked();
+        }
         let state = self.get_state().await;
         if state["available"] != true {
             return json!({"ok": false, "message": "No update to install."});
