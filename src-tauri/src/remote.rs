@@ -310,8 +310,7 @@ impl RemoteAgent {
     async fn connect_once(self: &Arc<Self>, server_url: &str, device: &Device) -> Outcome {
         use base64::Engine;
         let endpoint = format!("{}/device", server_url.replacen("http", "ws", 1));
-        let mut nonce = [0_u8; 16];
-        rand::thread_rng().fill_bytes(&mut nonce);
+        let nonce: [u8; 16] = rand::random();
         let nonce_text = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(nonce);
         let Ok(mut request) = endpoint.into_client_request() else { return Outcome::Failed };
         let headers = request.headers_mut();
