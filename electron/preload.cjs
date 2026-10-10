@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("northstar", Object.freeze({
     getState: () => ipcRenderer.invoke("update:state"),
     check: () => ipcRenderer.invoke("update:check"),
     openRelease: () => ipcRenderer.invoke("update:open"),
+    install: () => ipcRenderer.invoke("update:install"),
     onChange: (callback) => {
       if (typeof callback !== "function") return;
       ipcRenderer.on("update:changed", (_event, state) => callback(state));

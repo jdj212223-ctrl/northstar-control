@@ -14,6 +14,7 @@ const { createRemoteAgent } = require("./remote-agent.cjs");
 const { createMacHardwareHelper } = require("./mac-hardware-helper.cjs");
 const { getProcessActivity } = require("./activity-monitor.cjs");
 const { createUpdater, RELEASE_PREFIX } = require("./updater.cjs");
+const { installUpdate } = require("./installer.cjs");
 
 const execFileAsync = promisify(execFile);
 const powerPlanIds = Object.freeze({
@@ -521,6 +522,22 @@ function registerIpc() {
     assertLocalRenderer(event);
     const { url } = updater.getState();
     if (url && url.startsWith(RELEASE_PREFIX)) await shell.openExternal(url);
+  });
+  let installing = false;
+  ipcMain.handle("update:install", async (event) => {
+    assertLocalRenderer(event);
+    const state = updater.getState();
+    if (!state.available || installing) return { ok: false, message: "No update to install." };
+    installing = true;
+    try {
+      const result = await installUpdate({ assets: state.assets, quit: () => setTimeout(() => app.quit(), 300) });
+      if (result.manual && state.url && state.url.startsWith(RELEASE_PREFIX)) await shell.openExternal(state.url);
+      if (!result.ok) installing = false;
+      return result;
+    } catch (error) {
+      installing = false;
+      return { ok: false, message: error.message };
+    }
   });
   ipcMain.handle("github:open-registration", async (event) => {
     assertLocalRenderer(event);

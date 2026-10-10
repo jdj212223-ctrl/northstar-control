@@ -25,11 +25,14 @@ function parseRelease(release, currentVersion) {
   if (!isNewerVersion(version, currentVersion)) return { available: false };
   const url = String(release.html_url || "");
   if (!url.startsWith(RELEASE_PREFIX)) return { available: false };
-  return { available: true, version, url };
+  const assets = (Array.isArray(release.assets) ? release.assets : [])
+    .filter((asset) => asset && typeof asset.name === "string" && typeof asset.browser_download_url === "string")
+    .map((asset) => ({ name: asset.name, url: asset.browser_download_url, digest: String(asset.digest || ""), size: Number(asset.size) || 0 }));
+  return { available: true, version, url, assets };
 }
 
 function createUpdater({ currentVersion, fetchImpl = globalThis.fetch, onChange = () => {}, intervalMs = 6 * 60 * 60 * 1000 }) {
-  let state = { available: false, checking: false, currentVersion, version: null, url: null, error: null };
+  let state = { available: false, checking: false, currentVersion, version: null, url: null, assets: [], error: null };
   let timer = null;
 
   async function check() {
@@ -41,7 +44,7 @@ function createUpdater({ currentVersion, fetchImpl = globalThis.fetch, onChange 
       });
       if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
       const result = parseRelease(await response.json(), currentVersion);
-      state = { ...state, checking: false, available: result.available, version: result.version || null, url: result.url || null };
+      state = { ...state, checking: false, available: result.available, version: result.version || null, url: result.url || null, assets: result.assets || [] };
     } catch (error) {
       state = { ...state, checking: false, error: error.message };
     }

@@ -40,10 +40,24 @@
     const renderUpdate = (state) => {
       if (!state || !state.available) { pill.hidden = true; return; }
       pill.textContent = `Update available · v${state.version}`;
-      pill.title = "Open the Northstar Control release page to download the update";
+      pill.title = "Click to download and install the update automatically";
       pill.hidden = false;
     };
-    pill.addEventListener("click", () => window.northstar.update.openRelease());
+    pill.addEventListener("click", async () => {
+      if (pill.dataset.busy) return;
+      pill.dataset.busy = "1";
+      const label = pill.textContent;
+      pill.textContent = "Downloading update…";
+      try {
+        const result = await window.northstar.update.install();
+        if (result && result.ok) { pill.textContent = "Installing — the app will restart"; return; }
+        showToast(result && result.message ? result.message : "Could not install the update.");
+      } catch {
+        showToast("Could not install the update.");
+      }
+      pill.textContent = label;
+      delete pill.dataset.busy;
+    });
     window.northstar.update.onChange(renderUpdate);
     window.northstar.update.getState().then(renderUpdate).catch(() => {});
   }
