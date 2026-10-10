@@ -28,6 +28,8 @@ function createRemoteAgent({
   setPowerProfile,
   setChargeLimit,
   confirmCommand,
+  runTerminal,
+  now = Date.now,
   platform = process.platform,
   onStatusChange = () => {}
 }) {
@@ -108,6 +110,8 @@ function createRemoteAgent({
     });
   }
 
+  let terminalGrant = null;
+
   async function handleCommand(message) {
     if (!message || message.type !== "command" || typeof message.requestId !== "string"
         || !/^[0-9a-f-]{36}$/i.test(message.requestId) || !message.command) return;
@@ -136,6 +140,20 @@ function createRemoteAgent({
       });
       if (approved) result = await setChargeLimit(enabled);
       else result = { ok: false, reason: "declined-on-device" };
+    }
+    if (message.command.type === "terminal" && typeof message.command.command === "string"
+        && message.command.command.length <= 500 && typeof runTerminal === "function") {
+      if (!terminalGrant || terminalGrant.user !== requestedBy || terminalGrant.expiresAt <= now()) {
+        terminalGrant = null;
+        const approved = await confirmCommand({
+          title: "Allow remote terminal access?",
+          message: `@${requestedBy} wants to run commands on this computer for 10 minutes.`,
+          detail: `First command: ${message.command.command}\n\nOnly approve this if you started it. Commands run with your user account's permissions.`,
+          confirmLabel: "Allow for 10 minutes"
+        });
+        if (approved) terminalGrant = { user: requestedBy, expiresAt: now() + 10 * 60 * 1000 };
+      }
+      result = terminalGrant ? await runTerminal(message.command.command) : { ok: false, reason: "declined-on-device" };
     }
     if (socket && socket.readyState === WebSocketImpl.OPEN) {
       socket.send(JSON.stringify({ type: "command-result", requestId: message.requestId, result }));

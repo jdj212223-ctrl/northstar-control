@@ -234,4 +234,4 @@ licensed under the [MIT License](./LICENSE).
 
 ## Plans and billing
 
-The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professional (€19) monthly plans, billed through Stripe Checkout. Monitoring and the activity monitor stay free; paid plans unlock remote battery and power-profile commands. To enable billing on your own server set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/stripe/webhook` for `checkout.session.completed`, `customer.subscription.updated` and `customer.subscription.deleted`.
+The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professional (€19) monthly plans, billed through Stripe Checkout. Monitoring and the activity monitor stay free; paid plans unlock remote battery and power-profile commands; Professional also unlocks a remote terminal, which the computer must approve on-device for each 10-minute session. To enable billing on your own server set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/stripe/webhook` for `checkout.session.completed`, `customer.subscription.updated` and `customer.subscription.deleted`.

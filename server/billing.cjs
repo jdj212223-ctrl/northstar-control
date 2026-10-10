@@ -7,7 +7,7 @@ const PLANS = Object.freeze({
   plus: { id: "plus", name: "Plus", priceCents: 200, remoteCommands: true, perks: ["Remote battery & power-profile commands from the web"] },
   pro: { id: "pro", name: "Pro", priceCents: 500, remoteCommands: true, perks: ["Everything in Plus", "Email support"] },
   max: { id: "max", name: "Max", priceCents: 900, remoteCommands: true, perks: ["Everything in Pro", "Priority email support"] },
-  business: { id: "business", name: "Professional", priceCents: 1900, remoteCommands: true, perks: ["Everything in Max", "Built for companies: Stripe invoices and business support"] }
+  business: { id: "business", name: "Professional", priceCents: 1900, remoteCommands: true, terminal: true, perks: ["Everything in Max", "Remote terminal (each session approved on the computer)", "Built for companies: Stripe invoices and business support"] }
 });
 const PAID_IDS = Object.freeze(["plus", "pro", "max", "business"]);
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);

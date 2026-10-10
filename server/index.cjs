@@ -561,15 +561,17 @@ function createRemoteServer({
       if (deviceMatch && request.method === "POST" && deviceMatch[2] === "commands") {
         const session = requireSession(request, response, true, headers);
         if (!session) return;
-        if (!getPlan(session.account.id).remoteCommands) return json(response, 402, { error: "plan-required" }, headers);
+        const plan = getPlan(session.account.id);
+        if (!plan.remoteCommands) return json(response, 402, { error: "plan-required" }, headers);
+        const body = await readJson(request);
+        const command = validateCommand(body);
+        if (!command) return json(response, 400, { error: "unsupported-command" }, headers);
+        if (command.type === "terminal" && !plan.terminal) return json(response, 402, { error: "plan-required" }, headers);
         const id = deviceMatch[1];
         const owned = db.prepare("SELECT id FROM devices WHERE id = ? AND owner_id = ?").get(id, session.account.id);
         if (!owned) return json(response, 404, { error: "device-not-found" }, headers);
         const socket = connectedDevices.get(id);
         if (!socket || socket.readyState !== WebSocket.OPEN) return json(response, 409, { error: "device-offline" }, headers);
-        const body = await readJson(request);
-        const command = validateCommand(body);
-        if (!command) return json(response, 400, { error: "unsupported-command" }, headers);
         const requestId = randomUUID();
         const result = await new Promise((resolve) => {
           const timer = setTimeout(() => {
@@ -608,7 +610,7 @@ function createRemoteServer({
       if (!resolve) return;
       pendingCommands.delete(message.requestId);
       const result = message.result && typeof message.result.ok === "boolean"
-        ? { ok: message.result.ok, reason: typeof message.result.reason === "string" ? message.result.reason.slice(0, 80) : undefined }
+        ? { ok: message.result.ok, reason: typeof message.result.reason === "string" ? message.result.reason.slice(0, 80) : undefined, output: typeof message.result.output === "string" ? message.result.output.slice(0, 8000) : undefined }
         : { ok: false, reason: "invalid-device-response" };
       resolve(result);
     }
@@ -666,6 +668,9 @@ function validateCommand(body) {
   }
   if (body?.type === "charge-limit" && typeof body.enabled === "boolean") {
     return { type: body.type, enabled: body.enabled };
+  }
+  if (body?.type === "terminal" && typeof body.command === "string" && body.command.trim() && body.command.length <= 500 && !/[\0\r\n]/.test(body.command)) {
+    return { type: "terminal", command: body.command };
   }
   return null;
 }

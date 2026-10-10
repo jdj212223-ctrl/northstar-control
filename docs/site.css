@@ -267,3 +267,8 @@ h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
 }
 
 .api-settings-panel[hidden] { display: none; }
+
+.device-terminal { margin-top: 12px; }
+.device-terminal form { display: flex; gap: 8px; }
+.device-terminal input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: inherit; font: 12px "DM Mono", monospace; }
+.terminal-output { max-height: 240px; overflow: auto; margin: 8px 0 0; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #0b0b08; color: #d7cc91; font: 11px/1.5 "DM Mono", monospace; white-space: pre-wrap; word-break: break-word; }

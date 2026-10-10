@@ -18,6 +18,7 @@
   let apiBase = DEFAULT_API_URL;
   let csrfToken = "";
   let account = null;
+  let currentPlan = "free";
   let deviceFlowId = "";
   let deviceFlowTimer = null;
   let pairCodeTimer = null;
@@ -244,6 +245,7 @@
     const grid = document.getElementById("plans-grid");
     grid.replaceChildren();
     const current = session.plan;
+    currentPlan = current || "free";
     document.getElementById("plans-title").textContent = account
       ? `You are on ${session.plans.find((plan) => plan.id === current)?.name || "Free"}`
       : "Sign in to choose a plan";
@@ -459,7 +461,44 @@
     limitation.textContent = "Fan-speed and clock/voltage controls are unavailable.";
     controls.append(message, limitation);
     card.append(controls);
+    if (currentPlan === "business" && device.online) card.append(renderTerminal(device));
     return card;
+  }
+
+  function renderTerminal(device) {
+    const box = document.createElement("div");
+    box.className = "device-terminal";
+    const form = document.createElement("form");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 500;
+    input.placeholder = "Run a command (the computer asks for approval)";
+    input.setAttribute("aria-label", `Terminal command for ${device.name}`);
+    const run = document.createElement("button");
+    run.className = "button button-secondary";
+    run.textContent = "Run";
+    form.append(input, run);
+    const output = document.createElement("pre");
+    output.className = "terminal-output";
+    output.hidden = true;
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const command = input.value.trim();
+      if (!command) return;
+      run.disabled = true;
+      output.hidden = false;
+      output.textContent = "Waiting for approval on the computer…";
+      try {
+        const result = await apiRequest(`/api/devices/${device.id}/commands`, { method: "POST", body: { type: "terminal", command } });
+        output.textContent = `$ ${command}\n${result.output || (result.ok ? "(no output)" : `Could not run: ${result.reason || "unsupported"}`)}`;
+      } catch (error) {
+        output.textContent = error.status === 504 ? "No response from the computer, or approval timed out." : `Could not run: ${error.message}`;
+      } finally {
+        run.disabled = false;
+      }
+    });
+    box.append(form, output);
+    return box;
   }
 
   async function runDeviceCommand(device, command, message) {

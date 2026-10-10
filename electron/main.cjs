@@ -522,6 +522,19 @@ function registerIpc() {
   });
 }
 
+async function runTerminalCommand(command) {
+  const [file, args] = process.platform === "win32"
+    ? [windowsPowerShell, ["-NoProfile", "-NonInteractive", "-Command", command]]
+    : ["/bin/sh", ["-c", command]];
+  try {
+    const { stdout, stderr } = await execFileAsync(file, args, { timeout: 10000, maxBuffer: 64 * 1024, windowsHide: true });
+    return { ok: true, output: `${stdout}${stderr}`.slice(0, 8000) };
+  } catch (error) {
+    const output = `${error.stdout || ""}${error.stderr || ""}` || error.message;
+    return { ok: false, reason: error.killed ? "command-timed-out" : "command-failed", output: String(output).slice(0, 8000) };
+  }
+}
+
 function createWindow() {
   const window = new BrowserWindow(windowOptions);
   window.once("ready-to-show", () => window.show());
@@ -546,6 +559,7 @@ if (isElectron) {
       getSystemStatus,
       setPowerProfile,
       setChargeLimit,
+      runTerminal: runTerminalCommand,
       confirmCommand: async ({ title, message, detail, confirmLabel }) => {
         const result = await dialog.showMessageBox({
           type: "warning",

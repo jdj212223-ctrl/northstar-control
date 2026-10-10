@@ -224,6 +224,11 @@ test("plans limit devices and remote commands, and webhooks need a valid signatu
   const ownerId = owner.account.id;
   assert.equal((await grantPlan(baseUrl, ownerId, "pro")).status, 200);
   assert.equal((await request(baseUrl, "/api/auth/session", { cookie: owner.cookie })).data.plan, "pro");
+  const proTerminal = await request(baseUrl, "/api/devices/00000000-0000-4000-8000-000000000000/commands", { method: "POST", cookie: owner.cookie, csrf: owner.csrf, body: { type: "terminal", command: "ls" } });
+  assert.equal(proTerminal.response.status, 402);
+  assert.equal((await grantPlan(baseUrl, ownerId, "business")).status, 200);
+  const businessTerminal = await request(baseUrl, "/api/devices/00000000-0000-4000-8000-000000000000/commands", { method: "POST", cookie: owner.cookie, csrf: owner.csrf, body: { type: "terminal", command: "ls" } });
+  assert.equal(businessTerminal.response.status, 404);
   assert.equal((await grantPlan(baseUrl, ownerId, "pro", "customer.subscription.deleted")).status, 200);
   assert.equal((await request(baseUrl, "/api/auth/session", { cookie: owner.cookie })).data.plan, "free");
 });
