@@ -191,7 +191,7 @@ function createRemoteServer({
   )`);
   const getSubscription = (ownerId) => db.prepare("SELECT * FROM subscriptions WHERE owner_id = ?").get(String(ownerId));
   const getPlan = (ownerId) => billing.planFor(getSubscription(ownerId));
-  const plansForClient = () => Object.values(billing.PLANS).map(({ id, name, priceCents, devices, perks }) => ({ id, name, priceCents, devices, perks }));
+  const plansForClient = () => Object.values(billing.PLANS).map(({ id, name, priceCents, perks }) => ({ id, name, priceCents, perks }));
 
   const sessions = {
     get(id) {
@@ -511,7 +511,7 @@ function createRemoteServer({
         for (const [key, pair] of pairCodes) if (pair.expiresAt <= now()) pairCodes.delete(key);
         if (pairCodes.size >= 10000) return json(response, 503, { error: "too-many-pairing-codes" }, headers);
         const ownedCount = db.prepare("SELECT COUNT(*) AS count FROM devices WHERE owner_id = ?").get(session.account.id).count;
-        if (ownedCount >= getPlan(session.account.id).devices) return json(response, 402, { error: "device-limit-reached" }, headers);
+        if (ownedCount >= 50) return json(response, 409, { error: "device-limit-reached" }, headers);
         const body = await readJson(request);
         if (body.name !== undefined && !validDeviceName(body.name)) return json(response, 400, { error: "invalid-device-name" }, headers);
         let code = "";

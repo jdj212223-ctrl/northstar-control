@@ -3,11 +3,11 @@
 const crypto = require("node:crypto");
 
 const PLANS = Object.freeze({
-  free: { id: "free", name: "Free", priceCents: 0, devices: 3, remoteCommands: false, perks: ["Live monitoring", "Activity monitor", "3 paired computers"] },
-  plus: { id: "plus", name: "Plus", priceCents: 200, devices: 5, remoteCommands: true, perks: ["Remote battery & power-profile commands", "5 paired computers"] },
-  pro: { id: "pro", name: "Pro", priceCents: 500, devices: 15, remoteCommands: true, perks: ["Everything in Plus", "15 paired computers"] },
-  max: { id: "max", name: "Max", priceCents: 900, devices: 30, remoteCommands: true, perks: ["Everything in Pro", "30 paired computers", "Priority email support"] },
-  business: { id: "business", name: "Professional", priceCents: 1900, devices: 100, remoteCommands: true, perks: ["Everything in Max", "100 paired computers", "Business support and Stripe invoices"] }
+  free: { id: "free", name: "Free", priceCents: 0, remoteCommands: false, perks: ["Live monitoring", "Activity monitor", "Unlimited paired computers"] },
+  plus: { id: "plus", name: "Plus", priceCents: 200, remoteCommands: true, perks: ["Remote battery & power-profile commands from the web"] },
+  pro: { id: "pro", name: "Pro", priceCents: 500, remoteCommands: true, perks: ["Everything in Plus", "Email support"] },
+  max: { id: "max", name: "Max", priceCents: 900, remoteCommands: true, perks: ["Everything in Pro", "Priority email support"] },
+  business: { id: "business", name: "Professional", priceCents: 1900, remoteCommands: true, perks: ["Everything in Max", "Built for companies: Stripe invoices and business support"] }
 });
 const PAID_IDS = Object.freeze(["plus", "pro", "max", "business"]);
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
