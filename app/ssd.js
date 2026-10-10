@@ -48,12 +48,12 @@
     const extra = [];
     if (drive.availableSparePercent != null) extra.push(`Spare blocks ${fmt(drive.availableSparePercent)}%`);
     if (drive.mediaErrors != null) extra.push(`Media errors ${fmt(drive.mediaErrors)}`);
-    if (drive.driveHealthPercent != null && drive.healthSource === "writes") extra.push(`Drive's own wear reading ${fmt(drive.driveHealthPercent)}/100`);
+    if (drive.estimatedHealthPercent != null && drive.healthSource === "drive") extra.push(`Rough write-based endurance estimate ${fmt(drive.estimatedHealthPercent)}/100 (assumes a typical rating, not your drive's real one)`);
 
-    const source = drive.healthSource === "writes"
-      ? "Score (1–100) = all data ever written to the drive, compared with a typical ~600 TBW per TB of capacity. It is an estimate; your drive's real rating may differ."
-      : drive.healthSource === "drive"
-        ? "Score comes from the drive's own wear indicator (100 − wear)."
+    const source = drive.healthSource === "drive"
+      ? "Score (1–100) is the drive's own measured wear indicator (100 − wear)."
+      : drive.healthSource === "writes"
+        ? "This drive doesn't report wear, so the score is estimated from all data ever written versus a typical ~600 TBW per TB of capacity. Your drive's real rating may differ."
         : "Not enough data to score this drive.";
     panel.append(head, gauge, stats, make("p", "fine-print", [...extra, source].join(" · ")));
     return panel;

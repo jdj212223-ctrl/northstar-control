@@ -120,9 +120,9 @@ pub fn build_report(
         _ => None,
     };
     let reported = drive_used.map(|used| (100.0 - used).clamp(0.0, 100.0));
-    // The headline score is computed from total data written; the drive's own wear is secondary.
-    let health = estimated.map(|value| value.round().clamp(1.0, 100.0)).or(reported);
-    let source = if estimated.is_some() { "writes" } else if reported.is_some() { "drive" } else { "none" };
+    // The drive's own measured wear is authoritative; the write-based figure is only a rough fallback.
+    let health = reported.or(estimated).map(|value| value.round().clamp(1.0, 100.0));
+    let source = if reported.is_some() { "drive" } else if estimated.is_some() { "writes" } else { "none" };
 
     // Years left at the average write rate since the drive was new.
     let years_left = match (written_tb, rated_tbw, power_on_hours) {
@@ -270,11 +270,11 @@ mod tests {
         });
         let report = parse_smartctl(&info, None).unwrap();
         assert_eq!(report["writtenTB"], json!(56.9));
-        assert_eq!(report["healthPercent"], json!(63.0)); // 100 - 56.9/154 written
-        assert_eq!(report["driveHealthPercent"], json!(96.0));
-        assert_eq!(report["healthSource"], json!("writes"));
+        assert_eq!(report["healthPercent"], json!(96.0));
+        assert_eq!(report["estimatedHealthPercent"], json!(63.0));
+        assert_eq!(report["healthSource"], json!("drive"));
         assert_eq!(report["ratedTBW"], json!(154.0)); // 256 GB class
-        assert_eq!(report["status"], json!("Fair"));
+        assert_eq!(report["status"], json!("Good"));
     }
 
     #[test]
