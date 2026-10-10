@@ -1,0 +1,28 @@
+app = "northstar-control"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8787"
+  NORTHSTAR_TRUST_PROXY = "1"
+  NORTHSTAR_ALLOWED_ORIGINS = "https://jdj212223-ctrl.github.io"
+  NORTHSTAR_DB_PATH = "/data/northstar.sqlite"
+
+[mounts]
+  source = "northstar_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "30s"
+    timeout = "5s"
