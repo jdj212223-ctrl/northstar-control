@@ -422,7 +422,7 @@
         try {
           const status = await window.northstar.remote.getStatus();
           const serverInput = document.getElementById("remote-server-url");
-          if (status.serverUrl && !serverInput.value) serverInput.value = status.serverUrl;
+          
           const pairButton = document.getElementById("remote-pair-button");
           const unpairButton = document.getElementById("remote-unpair-button");
           const codeInput = document.getElementById("remote-pairing-code");

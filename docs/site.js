@@ -14,7 +14,8 @@
   const scrim = document.getElementById("mobile-scrim");
   const apiInput = document.getElementById("api-base-url");
   const apiStatus = document.getElementById("api-status");
-  let apiBase = "";
+  const DEFAULT_API_URL = "https://northstar-control.fly.dev";
+  let apiBase = DEFAULT_API_URL;
   let csrfToken = "";
   let account = null;
   let deviceFlowId = "";
@@ -76,7 +77,7 @@
     themeSelect.value = preferences.theme === "light" ? "light" : "dark";
     document.documentElement.dataset.theme = themeSelect.value;
     document.documentElement.classList.toggle("compact", compactToggle.checked);
-    apiBase = normalizeApiUrl(preferences.apiUrl) || "";
+    apiBase = DEFAULT_API_URL;
     apiInput.value = apiBase;
   }
 
@@ -171,7 +172,7 @@
       document.getElementById("remote-connection-title").textContent = "Remote service is not configured";
       document.getElementById("remote-connection-copy").textContent = "Set your backend URL in Account & settings to connect the dashboard with paired computers.";
       document.getElementById("device-connection-title").textContent = "Connect to your remote service";
-      document.getElementById("device-connection-copy").textContent = "Save the service URL and sign in to see computers paired with your account.";
+      document.getElementById("device-connection-copy").textContent = "Sign in to see computers paired with your account.";
       return;
     }
     try {
@@ -241,7 +242,7 @@
   async function startSignIn() {
     const status = document.getElementById("web-auth-status");
     if (!apiBase) {
-      status.textContent = "Set your remote-service URL in Account & settings first.";
+      status.textContent = "The Northstar service is not configured.";
       setView("settings");
       apiInput.focus();
       return;

@@ -98,7 +98,7 @@
             <div><div class="eyebrow">YOUR WORKSPACE <span>·</span> DEVICES</div><h1>Computer <em>fleet.</em></h1><p class="subtitle">Pair, check, and manage the computers connected to your account.</p></div>
             <span class="count-pill"><i></i>0 COMPUTERS</span>
           </div>
-          <div class="notice notice-amber" id="device-connection-notice" role="status"><span class="notice-icon">!</span><div><strong id="device-connection-title">Connect to your remote service</strong><p id="device-connection-copy">Save the service URL and sign in to see computers paired with your account.</p></div></div>
+          <div class="notice notice-amber" id="device-connection-notice" role="status"><span class="notice-icon">!</span><div><strong id="device-connection-title">Connect to your remote service</strong><p id="device-connection-copy">Sign in to see computers paired with your account.</p></div></div>
           <div class="pair-card panel">
             <div><div class="eyebrow">PAIR A COMPUTER</div><h2>One-time pairing code</h2><p>Generate a short-lived code, then enter it in Northstar Control on the computer. Pairing must be approved on that computer.</p></div>
             <button class="button button-primary" id="generate-pair-code" disabled>Generate code</button>
@@ -144,7 +144,7 @@
               <a class="button button-secondary full-button" href="https://github.com/jdj212223-ctrl/northstar-control" target="_blank" rel="noopener noreferrer">View project on GitHub <span>↗</span></a>
             </section>
           </div>
-          <section class="panel api-settings-panel">
+          <section class="panel api-settings-panel" hidden>
             <div class="panel-heading"><div><h2>Remote service</h2><p>Enter your self-hosted Northstar backend URL. This is separate from the GitHub OAuth Homepage URL.</p></div><span class="panel-icon">⌁</span></div>
             <label class="api-url-label" for="api-base-url">Service URL</label>
             <div class="api-url-row"><input id="api-base-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-northstar-server.example"><button class="button button-secondary" id="save-api-url">Save service URL</button></div>

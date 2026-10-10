@@ -222,8 +222,8 @@
           </section>
             <section class="panel settings-panel remote-pairing-panel">
               <div class="panel-heading"><div><h2>Pair this computer with your web dashboard</h2><p>Pairing gives your signed-in account live status. Hardware changes still require approval on this computer.</p></div><span class="icon-disc green-disc">⌁</span></div>
-              <label class="pairing-label" for="remote-server-url">Remote service URL</label>
-              <input class="pairing-input" id="remote-server-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-server.example">
+              <label class="pairing-label" for="remote-server-url" hidden>Remote service URL</label>
+              <input class="pairing-input" id="remote-server-url" type="url" hidden value="https://northstar-control.fly.dev" autocomplete="url" spellcheck="false" placeholder="https://your-server.example">
               <label class="pairing-label" for="remote-pairing-code">One-time pairing code</label>
               <div class="client-id-row"><input class="pairing-input" id="remote-pairing-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" placeholder="Enter code from your web dashboard"><button class="button button-primary" id="remote-pair-button">Pair computer</button></div>
               <div class="remote-device-status" id="remote-device-status" role="status" aria-live="polite">This computer is not paired to a remote account.</div>
