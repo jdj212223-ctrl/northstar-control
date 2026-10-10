@@ -24,13 +24,20 @@ jobs:
         include:
           - platform: macOS
             os: macos-latest
-            script: package:mac
+            args: --target universal-apple-darwin --bundles app,dmg
+            targets: aarch64-apple-darwin,x86_64-apple-darwin
           - platform: Windows
             os: windows-latest
-            script: package:windows
-          - platform: Linux
-            os: ubuntu-latest
-            script: package:linux
+            args: --bundles nsis
+            targets: ""
+          - platform: Linux-x64
+            os: ubuntu-22.04
+            args: --bundles deb,rpm,appimage
+            targets: ""
+          - platform: Linux-arm64
+            os: ubuntu-22.04-arm
+            args: --bundles deb,rpm,appimage
+            targets: ""
     steps:
       - name: Check out release
         uses: actions/checkout@v4
@@ -41,10 +48,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.1
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Verify release tag
         env:
@@ -52,93 +55,63 @@ jobs:
         run: |
           node -e 'if (`v${require("./package.json").version}` !== process.env.RELEASE_TAG) throw new Error("Release tag must match package.json version")'
 
-      - name: Test release source
-        if: matrix.platform == 'macOS'
-        run: npm test
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.targets }}
 
-      - name: Check source syntax
-        run: npm run check
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
 
-      - name: Test activity monitor on runner
-        run: node --test tests/activity-monitor.test.cjs
-
-      - name: Install Flatpak build tools
-        if: matrix.platform == 'Linux'
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'Linux')
         run: |
           sudo apt-get update
-          sudo apt-get install --yes flatpak flatpak-builder
-          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev libssl-dev rpm file
+
+      - name: Check web source syntax
+        run: node --check app/app.js && node --check app/bench.js && node --check app/tauri-bridge.js
+
+      - name: Test Rust modules
+        working-directory: src-tauri
+        run: cargo test --lib
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2" --locked
+
+      - name: Generate icons
+        run: cargo tauri icon assets/northstar.png
 
       - name: Build installers
-        env:
-          DEBUG: ${{ matrix.platform == 'Linux' && '@malept/flatpak-bundler' || '' }}
-        run: npm run ${{ matrix.script }}
+        run: cargo tauri build ${{ matrix.args }}
+
+      - name: Collect installers
+        shell: bash
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          mkdir out
+          B=src-tauri/target
+          if [ "${{ matrix.platform }}" = "macOS" ]; then
+            APP=$(find $B -type d -name "*.app" -path "*bundle/macos*" | head -n1)
+            ditto -c -k --keepParent "$APP" "out/Northstar-Control-$VERSION-universal-mac.zip"
+            cp $(find $B -name "*.dmg" | head -n1) "out/Northstar-Control-$VERSION-universal.dmg"
+          elif [ "${{ matrix.platform }}" = "Windows" ]; then
+            cp $(find $B -name "*-setup.exe" | head -n1) "out/Northstar.Control.Setup.$VERSION.exe"
+          else
+            ARCH=$([ "${{ matrix.platform }}" = "Linux-arm64" ] && echo arm64 || echo x86_64)
+            cp $(find $B -name "*.AppImage" | head -n1) "out/Northstar.Control-$VERSION-$ARCH.AppImage"
+            cp $(find $B -name "*.deb" | head -n1) "out/Northstar.Control-$VERSION-$ARCH.deb"
+            cp $(find $B -name "*.rpm" | head -n1) "out/Northstar.Control-$VERSION-$ARCH.rpm"
+          fi
+          ls -l out
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
           name: installers-${{ matrix.platform }}
-          path: |
-            build/desktop/*.dmg
-            build/desktop/*.zip
-            build/desktop/*.exe
-            build/desktop/*.AppImage
-            build/desktop/*.flatpak
-            build/desktop/*.deb
-            build/desktop/*.rpm
-            build/desktop/*.blockmap
-            build/desktop/latest-mac.yml
-          if-no-files-found: error
-          retention-days: 7
-
-  package-linux-arm64-flatpak:
-    name: Package Linux ARM64 Flatpak
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Check out release
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.release_tag && github.sha || github.ref }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.13.1
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify release tag
-        env:
-          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
-        run: |
-          node -e 'if (`v${require("./package.json").version}` !== process.env.RELEASE_TAG) throw new Error("Release tag must match package.json version")'
-
-      - name: Check source syntax
-        run: npm run check
-
-      - name: Test activity monitor on ARM64 runner
-        run: node --test tests/activity-monitor.test.cjs
-
-      - name: Install Flatpak build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes flatpak flatpak-builder
-          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-      - name: Build ARM64 Flatpak
-        env:
-          DEBUG: "@malept/flatpak-bundler"
-        run: npm run package:flatpak:arm64
-
-      - name: Upload ARM64 Flatpak
-        uses: actions/upload-artifact@v4
-        with:
-          name: installers-Linux-ARM64-Flatpak
-          path: build/desktop/*.flatpak
+          path: out/*
           if-no-files-found: error
           retention-days: 7
 
@@ -146,7 +119,6 @@ jobs:
     name: Publish GitHub release
     needs:
       - package
-      - package-linux-arm64-flatpak
     runs-on: ubuntu-latest
     steps:
       - name: Download all installers

@@ -1,6 +1,6 @@
 {
   "name": "northstar-control",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "author": "Northstar contributors",
   "license": "MIT",
@@ -10,9 +10,10 @@
   },
   "main": "electron/main.cjs",
   "scripts": {
-    "start": "electron .",
+    "start": "cargo tauri dev",
+    "start:electron": "electron .",
     "serve": "node server/index.cjs",
-    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/updater.cjs && node --check electron/installer.cjs && node --check electron/fan-curve.cjs && node --check electron/benchmark.cjs && node --check electron/bench-worker.cjs && node --check shared/channel.cjs && node --check electron/remote-agent.cjs && node --check electron/mac-hardware-helper.cjs && node --check server/index.cjs && node --check server/billing.cjs && node --check app/app.js && node --check app/bench.js && node --check docs/site.js",
+    "check": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/updater.cjs && node --check electron/installer.cjs && node --check electron/fan-curve.cjs && node --check electron/benchmark.cjs && node --check electron/bench-worker.cjs && node --check shared/channel.cjs && node --check electron/remote-agent.cjs && node --check electron/mac-hardware-helper.cjs && node --check server/index.cjs && node --check server/billing.cjs && node --check app/tauri-bridge.js && node --check app/app.js && node --check app/bench.js && node --check docs/site.js",
     "test": "node --test",
     "package:mac": "electron-builder --mac --universal --publish never",
     "package:windows": "electron-builder --win --publish never",

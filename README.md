@@ -3,6 +3,17 @@
 Northstar Control is an open-source desktop app for monitoring a computer and
 using hardware and power controls exposed by its operating system.
 
+## What's new in 2.1
+
+The desktop app no longer uses Electron. The whole native layer was rewritten in
+Rust on Tauri v2 (system WebView, much smaller install, no bundled Chromium).
+The interface, the NSP1 remote channel and the Fly.io service are unchanged.
+Benchmark scores come from a new Rust kernel and are **not comparable** with
+2.0 scores. On Windows the Rust build installs separately from an Electron 2.0
+install. The Electron sources remain in `electron/` as legacy
+(`npm run start:electron`). Linux Flatpak bundles are not built for 2.1; use the
+AppImage, deb or rpm.
+
 ## Web dashboard
 
 The account and computer dashboard is hosted on GitHub Pages:
