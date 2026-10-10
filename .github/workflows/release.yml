@@ -59,6 +59,13 @@ jobs:
       - name: Check source syntax
         run: npm run check
 
+      - name: Install Flatpak build tools
+        if: matrix.platform == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
       - name: Build installers
         run: npm run ${{ matrix.script }}
 
@@ -71,6 +78,7 @@ jobs:
             build/desktop/*.zip
             build/desktop/*.exe
             build/desktop/*.AppImage
+            build/desktop/*.flatpak
             build/desktop/*.deb
             build/desktop/*.rpm
             build/desktop/*.blockmap
@@ -95,7 +103,13 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "$RELEASE_TAG" installers/* \
-            --repo "$GH_REPO" \
-            --title "Northstar Control $RELEASE_TAG" \
-            --generate-notes
+          if gh release view "$RELEASE_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" installers/* \
+              --repo "$GH_REPO" \
+              --clobber
+          else
+            gh release create "$RELEASE_TAG" installers/* \
+              --repo "$GH_REPO" \
+              --title "Northstar Control $RELEASE_TAG" \
+              --generate-notes
+          fi

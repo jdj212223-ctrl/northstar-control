@@ -62,9 +62,15 @@
       "target": [
         "AppImage",
         "deb",
-        "rpm"
+        "rpm",
+        "flatpak"
       ],
-      "category": "System;Utility"
+      "category": "System;Utility",
+      "flatpak": {
+        "runtimeVersion": "24.08",
+        "baseVersion": "24.08",
+        "useWaylandFlags": true
+      }
     }
   }
 }
