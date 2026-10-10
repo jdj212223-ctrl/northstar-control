@@ -99,9 +99,9 @@ ARM64 Linux host. To install a release Flatpak, first set up Flatpak and Flathub
 for your distribution, then use the bundle matching your device architecture:
 
 ```sh
-flatpak install --user ./Northstar.Control-1.2.8-x86_64.flatpak
+flatpak install --user ./Northstar.Control-1.2.9-x86_64.flatpak
 # On ARM64 Linux:
-flatpak install --user ./Northstar.Control-1.2.8-aarch64.flatpak
+flatpak install --user ./Northstar.Control-1.2.9-aarch64.flatpak
 flatpak run org.northstar.control
 ```
 

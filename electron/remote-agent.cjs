@@ -2,9 +2,13 @@
 
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const WebSocket = require("ws");
+const { createChannel, DIRECTIONS } = require("../shared/channel.cjs");
 
 const PLATFORM_NAMES = Object.freeze({ darwin: "macOS", win32: "Windows", linux: "Linux" });
+
+const TRUSTED_HOSTS = Object.freeze(["northstar-control.fly.dev", "localhost", "127.0.0.1", "[::1]"]);
 
 function normalizeServerUrl(value) {
   if (typeof value !== "string" || value.length > 2048) return null;
@@ -13,6 +17,7 @@ function normalizeServerUrl(value) {
     const localHttp = url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
     if (url.username || url.password || url.search || url.hash || !["https:", ...(localHttp ? ["http:"] : [])].includes(url.protocol)) return null;
     if (url.pathname !== "/" && url.pathname !== "") return null;
+    if (!TRUSTED_HOSTS.includes(url.hostname)) return null;
     return url.origin;
   } catch {
     return null;
@@ -37,6 +42,7 @@ function createRemoteAgent({
   let socket = null;
   let reconnectTimer = null;
   let telemetryTimer = null;
+  let channel = null;
   let reconnectDelay = 1000;
   let stopped = true;
   let initialization;
@@ -103,7 +109,7 @@ function createRemoteAgent({
     if (!socket || socket.readyState !== WebSocketImpl.OPEN) return;
     Promise.resolve(getSystemStatus()).then((data) => {
       if (socket && socket.readyState === WebSocketImpl.OPEN) {
-        socket.send(JSON.stringify({ type: "telemetry", data }));
+        socket.send(channel.seal({ type: "telemetry", data }));
       }
     }).catch((error) => {
       console.error("Unable to publish computer status:", error.message);
@@ -156,7 +162,7 @@ function createRemoteAgent({
       result = terminalGrant ? await runTerminal(message.command.command) : { ok: false, reason: "declined-on-device" };
     }
     if (socket && socket.readyState === WebSocketImpl.OPEN) {
-      socket.send(JSON.stringify({ type: "command-result", requestId: message.requestId, result }));
+      socket.send(channel.seal({ type: "command-result", requestId: message.requestId, result }));
     }
   }
 
@@ -173,25 +179,28 @@ function createRemoteAgent({
     if (stopped || !configuration.device || socket) return;
     const endpoint = new URL("/device", configuration.serverUrl);
     endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+    const nonce = crypto.randomBytes(16);
+    const currentChannel = createChannel({ token: configuration.device.token, nonce, sendDirection: DIRECTIONS.toService });
     const currentSocket = new WebSocketImpl(endpoint, {
-      headers: { Authorization: `Bearer ${configuration.device.token}` },
+      headers: { Authorization: `Bearer ${configuration.device.token}`, "X-Northstar-Nonce": nonce.toString("base64url") },
       handshakeTimeout: 10000,
       maxPayload: 16 * 1024
     });
     socket = currentSocket;
+    channel = currentChannel;
     currentSocket.on("open", () => {
       reconnectDelay = 1000;
       sendTelemetry();
       telemetryTimer = setInterval(sendTelemetry, 30000);
       notifyStatus();
     });
-    currentSocket.on("message", (raw) => {
-      let message;
-      try { message = JSON.parse(raw.toString()); } catch { return; }
+    currentSocket.on("message", (raw, isBinary) => {
+      const message = isBinary && Buffer.isBuffer(raw) ? currentChannel.open(raw) : null;
+      if (!message) { currentSocket.close(1008, "Invalid frame"); return; }
       void handleCommand(message).catch((error) => {
         console.error("Remote hardware request failed:", error.message);
         if (typeof message.requestId === "string" && currentSocket.readyState === WebSocketImpl.OPEN) {
-          currentSocket.send(JSON.stringify({
+          currentSocket.send(currentChannel.seal({
             type: "command-result",
             requestId: message.requestId,
             result: { ok: false, reason: "local-command-failed" }

@@ -545,10 +545,22 @@ async function runTerminalCommand(command) {
   }
 }
 
+function lockDownSession(electronSession) {
+  electronSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  electronSession.setPermissionCheckHandler(() => false);
+  // The UI only ever talks to the main process over IPC; block every other network request from it.
+  electronSession.webRequest.onBeforeRequest((details, callback) => {
+    const allowed = details.url.startsWith("file://") || details.url.startsWith("devtools://") || details.url.startsWith("data:");
+    callback({ cancel: !allowed });
+  });
+}
+
 function createWindow() {
   const window = new BrowserWindow(windowOptions);
   window.once("ready-to-show", () => window.show());
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  window.webContents.on("will-attach-webview", (event) => event.preventDefault());
+  window.webContents.on("will-redirect", (event) => event.preventDefault());
   window.webContents.on("will-navigate", (event, destination) => {
     if (destination !== pathToFileURL(path.join(__dirname, "..", "app", "index.html")).href) event.preventDefault();
   });
@@ -594,6 +606,7 @@ if (isElectron) {
       console.error("Could not restore the Northstar remote-device connection:", error.message);
     });
     registerIpc();
+    lockDownSession(electron.session.defaultSession);
     createWindow();
     updater.start();
     app.on("activate", () => {

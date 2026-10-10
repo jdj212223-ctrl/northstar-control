@@ -8,6 +8,7 @@ const { isIP } = require("node:net");
 const { DatabaseSync } = require("node:sqlite");
 const { WebSocketServer, WebSocket } = require("ws");
 const billing = require("./billing.cjs");
+const { createChannel, parseNonce, DIRECTIONS } = require("../shared/channel.cjs");
 
 const DEVICE_CODE_URL = "https://github.com/login/device/code";
 const ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
@@ -352,8 +353,13 @@ function createRemoteServer({
             ON CONFLICT(owner_id) DO UPDATE SET plan = excluded.plan, status = excluded.status, customer_id = excluded.customer_id, subscription_id = excluded.subscription_id, updated_at = excluded.updated_at`)
             .run(String(ownerId), plan, status, customerId || null, subscriptionId || null, now());
         };
-        if (event.type === "checkout.session.completed" && object.mode === "subscription") {
-          save(object.client_reference_id, object.metadata?.plan, "active", object.customer, object.subscription);
+        if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") && object.mode === "subscription") {
+          // Delayed payment methods complete checkout before money arrives; only a paid session unlocks a plan.
+          if (object.payment_status === "paid" || object.payment_status === "no_payment_required") {
+            save(object.client_reference_id, object.metadata?.plan, "active", object.customer, object.subscription);
+          }
+        } else if (event.type === "checkout.session.async_payment_failed" && object.mode === "subscription") {
+          save(object.client_reference_id, object.metadata?.plan, "canceled", object.customer, object.subscription);
         } else if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
           const status = event.type === "customer.subscription.deleted" ? "canceled" : String(object.status || "canceled");
           save(object.metadata?.owner_id, object.metadata?.plan, status, object.customer, object.id);
@@ -582,7 +588,7 @@ function createRemoteServer({
             clearTimeout(timer);
             resolve(value);
           });
-          socket.send(JSON.stringify({ type: "command", requestId, requestedBy: session.account.login, command }));
+          socket.send(socket.channel.seal({ type: "command", requestId, requestedBy: session.account.login, command }));
         });
         return json(response, result.error ? 504 : 200, result, headers);
       }
@@ -594,10 +600,9 @@ function createRemoteServer({
     }
   }
 
-  function onSocketMessage(deviceId, socket, raw) {
-    let message;
-    try { message = JSON.parse(raw.toString()); } catch { socket.close(1007, "Invalid JSON"); return; }
-    if (!message || typeof message !== "object") return socket.close(1007, "Invalid message");
+  function onSocketMessage(deviceId, socket, raw, isBinary) {
+    const message = isBinary && Buffer.isBuffer(raw) ? socket.channel.open(raw) : null;
+    if (!message || typeof message !== "object") return socket.close(1008, "Invalid frame");
     if (message.type === "telemetry") {
       const telemetry = boundedTelemetry(message.data);
       if (!telemetry) return socket.close(1008, "Invalid telemetry");
@@ -616,11 +621,12 @@ function createRemoteServer({
     }
   }
 
-  webSockets.on("connection", (socket, deviceId) => {
+  webSockets.on("connection", (socket, deviceId, channel) => {
+    socket.channel = channel;
     const previous = connectedDevices.get(deviceId);
     if (previous && previous !== socket && previous.readyState === WebSocket.OPEN) previous.close(4002, "Reconnected elsewhere");
     connectedDevices.set(deviceId, socket);
-    socket.on("message", (message) => onSocketMessage(deviceId, socket, message));
+    socket.on("message", (message, isBinary) => onSocketMessage(deviceId, socket, message, isBinary));
     socket.on("close", () => {
       if (connectedDevices.get(deviceId) === socket) connectedDevices.delete(deviceId);
     });
@@ -638,7 +644,8 @@ function createRemoteServer({
     }
     const authorization = request.headers.authorization || "";
     const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
-    const record = token.length <= 128
+    const nonce = parseNonce(request.headers["x-northstar-nonce"]);
+    const record = nonce && token.length <= 128
       ? db.prepare("SELECT id FROM devices WHERE token_hash = ?").get(digest(token))
       : null;
     if (!record) {
@@ -647,7 +654,7 @@ function createRemoteServer({
       return;
     }
     webSockets.handleUpgrade(request, socket, head, (webSocket) => {
-      webSockets.emit("connection", webSocket, record.id);
+      webSockets.emit("connection", webSocket, record.id, createChannel({ token, nonce, sendDirection: DIRECTIONS.toDevice }));
     });
   });
 

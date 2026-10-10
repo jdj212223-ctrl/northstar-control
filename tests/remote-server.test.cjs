@@ -3,6 +3,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const WebSocket = require("ws");
+const { createChannel, DIRECTIONS } = require("../shared/channel.cjs");
 const { createRemoteServer } = require("../server/index.cjs");
 
 const origin = "https://northstar.test";
@@ -41,7 +42,7 @@ async function request(baseUrl, route, { method = "GET", body, cookie, csrf, req
 async function grantPlan(baseUrl, ownerId, plan, type = "checkout.session.completed") {
   const payload = JSON.stringify({
     type,
-    data: { object: { mode: "subscription", client_reference_id: String(ownerId), customer: "cus_1", subscription: "sub_1", id: "sub_1", status: "active", metadata: { plan, owner_id: String(ownerId) } } }
+    data: { object: { mode: "subscription", payment_status: "paid", client_reference_id: String(ownerId), customer: "cus_1", subscription: "sub_1", id: "sub_1", status: "active", metadata: { plan, owner_id: String(ownerId) } } }
   });
   const timestamp = Math.floor(Date.now() / 1000);
   const signature = require("node:crypto").createHmac("sha256", "whsec_test").update(`${timestamp}.${payload}`).digest("hex");
@@ -120,15 +121,18 @@ test("remote API signs in, pairs a device, relays telemetry and approved command
   assert.equal(paired.response.status, 201);
   assert.equal(paired.data.name, "Studio Mac");
 
+  const nonce = require("node:crypto").randomBytes(16);
+  const deviceToken = paired.data.deviceToken;
+  const channel = createChannel({ token: deviceToken, nonce, sendDirection: DIRECTIONS.toService });
   const socket = new WebSocket(`${baseUrl.replace("http:", "ws:")}/device`, {
-    headers: { Authorization: `Bearer ${paired.data.deviceToken}` }
+    headers: { Authorization: `Bearer ${paired.data.deviceToken}`, "X-Northstar-Nonce": nonce.toString("base64url") }
   });
   context.after(() => socket.close());
   await new Promise((resolve, reject) => {
     socket.once("open", resolve);
     socket.once("error", reject);
   });
-  socket.send(JSON.stringify({
+  socket.send(channel.seal({
     type: "telemetry",
     data: {
       platform: "macOS",
@@ -156,9 +160,9 @@ test("remote API signs in, pairs a device, relays telemetry and approved command
     csrf: owner.csrf,
     body: { type: "power-profile", profile: "Performance" }
   });
-  const command = JSON.parse(await new Promise((resolve) => socket.once("message", (message) => resolve(message.toString()))));
+  const command = channel.open(await new Promise((resolve) => socket.once("message", (message) => resolve(message))));
   assert.deepEqual(command.command, { type: "power-profile", profile: "Performance" });
-  socket.send(JSON.stringify({
+  socket.send(channel.seal({
     type: "command-result",
     requestId: command.requestId,
     result: { ok: true }
@@ -203,6 +207,15 @@ test("remote API requires same-site authentication for pairing and commands", as
     body: {}
   });
   assert.equal(missingCsrf.response.status, 401);
+});
+
+test("an unpaid checkout does not unlock a plan", async (context) => {
+  const { baseUrl } = await startServer(context, async () => ({ ok: true, json: async () => ({}) }));
+  const payload = JSON.stringify({ type: "checkout.session.completed", data: { object: { mode: "subscription", payment_status: "unpaid", client_reference_id: "999", customer: "c", subscription: "s", metadata: { plan: "business" } } } });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = require("node:crypto").createHmac("sha256", "whsec_test").update(`${timestamp}.${payload}`).digest("hex");
+  const sent = await fetch(`${baseUrl}/api/stripe/webhook`, { method: "POST", headers: { "Content-Type": "application/json", "Stripe-Signature": `t=${timestamp},v1=${signature}` }, body: payload });
+  assert.equal(sent.status, 200);
 });
 
 test("plans limit devices and remote commands, and webhooks need a valid signature", async (context) => {
