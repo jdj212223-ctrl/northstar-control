@@ -248,14 +248,22 @@
     }
     const button = document.getElementById("web-sign-in");
     button.disabled = true;
-    status.textContent = "Requesting a GitHub device code…";
+    status.textContent = "Contacting GitHub…";
+    // Opened synchronously so the click gesture keeps popup blockers happy; pointed at GitHub once it answers.
+    const githubTab = window.open("about:blank", "_blank");
+    if (githubTab) githubTab.opener = null;
     try {
       const flow = await apiRequest("/api/auth/device/start", { method: "POST", body: {} });
       deviceFlowId = flow.flowId;
       document.getElementById("web-device-code").textContent = flow.userCode;
       document.getElementById("web-device-status").textContent = "Enter this code on GitHub to authorize Northstar Control.";
       document.getElementById("web-device-flow").hidden = false;
-      status.textContent = "Complete the one-time code on GitHub.";
+      if (flow.verificationUrl === "https://github.com/login/device" && githubTab) {
+        githubTab.location.href = flow.verificationUrl;
+        status.textContent = "GitHub opened in a new tab. Enter the code shown here.";
+      } else {
+        status.textContent = "Open github.com/login/device and enter the code shown here.";
+      }
       deviceFlowTimer = window.setTimeout(pollDeviceFlow, Math.max(1000, flow.interval * 1000));
       window.setTimeout(() => {
         if (!deviceFlowId) return;
@@ -264,6 +272,7 @@
         document.getElementById("web-device-status").textContent = "The code expired. Start sign-in again.";
       }, flow.expiresIn * 1000);
     } catch (error) {
+      if (githubTab) githubTab.close();
       const message = remoteServiceError(error);
       status.textContent = message;
       apiStatus.textContent = message;
