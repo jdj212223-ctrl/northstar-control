@@ -65,12 +65,12 @@
         "rpm",
         "flatpak"
       ],
-      "category": "System;Utility",
-      "flatpak": {
-        "runtimeVersion": "24.08",
-        "baseVersion": "24.08",
-        "useWaylandFlags": true
-      }
+      "category": "System;Utility"
+    },
+    "flatpak": {
+      "runtimeVersion": "24.08",
+      "baseVersion": "24.08",
+      "useWaylandFlags": true
     }
   }
 }
