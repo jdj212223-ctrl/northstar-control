@@ -82,18 +82,22 @@ Build a platform package on the corresponding build host:
 npm run package:mac
 npm run package:windows
 npm run package:linux
+npm run package:flatpak:arm64
 ```
 
-Linux builds produce AppImage, DEB, RPM, and Flatpak bundle files. To install
-the Flatpak bundle, first set up Flatpak and Flathub for your distribution, then
-run:
+Linux x86_64 builds produce AppImage, DEB, RPM, and Flatpak bundle files.
+ARM64 Linux builds produce a separate Flatpak bundle and must be built on an
+ARM64 Linux host. To install a release Flatpak, first set up Flatpak and Flathub
+for your distribution, then use the bundle matching your device architecture:
 
 ```sh
 flatpak install --user ./Northstar.Control-1.2.4-x86_64.flatpak
+# On ARM64 Linux:
+flatpak install --user ./Northstar.Control-1.2.4-aarch64.flatpak
 flatpak run org.northstar.control
 ```
 
-The downloadable Flatpak bundle is not a Flathub listing and will not receive
+The downloadable Flatpak bundles are not Flathub listings and will not receive
 automatic updates. Windows builds produce an NSIS installer. Release builds use
 GitHub Actions on native operating-system runners and publish installers for
 all supported platforms when a `v*` tag is pushed.

@@ -89,9 +89,58 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  package-linux-arm64-flatpak:
+    name: Package Linux ARM64 Flatpak
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Check out release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag && github.sha || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.1
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          node -e 'if (`v${require("./package.json").version}` !== process.env.RELEASE_TAG) throw new Error("Release tag must match package.json version")'
+
+      - name: Check source syntax
+        run: npm run check
+
+      - name: Install Flatpak build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Build ARM64 Flatpak
+        env:
+          DEBUG: "@malept/flatpak-bundler"
+        run: npm run package:flatpak:arm64
+
+      - name: Upload ARM64 Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-Linux-ARM64-Flatpak
+          path: build/desktop/*.flatpak
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Publish GitHub release
-    needs: package
+    needs:
+      - package
+      - package-linux-arm64-flatpak
     runs-on: ubuntu-latest
     steps:
       - name: Download all installers

@@ -16,7 +16,8 @@
     "test": "node --test",
     "package:mac": "electron-builder --mac --universal --publish never",
     "package:windows": "electron-builder --win --publish never",
-    "package:linux": "electron-builder --linux --publish never"
+    "package:linux": "electron-builder --linux --publish never",
+    "package:flatpak:arm64": "electron-builder --linux flatpak --arm64 --publish never"
   },
   "devDependencies": {
     "electron": "44.5.1",
