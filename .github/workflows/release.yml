@@ -85,6 +85,8 @@ jobs:
         run: cargo test --lib
 
       - name: Build installers
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: cargo tauri build ${{ matrix.args }}
 
       - name: Collect installers
@@ -96,14 +98,14 @@ jobs:
           if [ "${{ matrix.platform }}" = "macOS" ]; then
             APP=$(find $B -type d -name "*.app" -path "*bundle/macos*" | head -n1)
             ditto -c -k --keepParent "$APP" "out/Northstar-Control-$VERSION-universal-mac.zip"
-            cp $(find $B -name "*.dmg" | head -n1) "out/Northstar-Control-$VERSION-universal.dmg"
+            cp "$(find $B -name "*.dmg" | head -n1)" "out/Northstar-Control-$VERSION-universal.dmg"
           elif [ "${{ matrix.platform }}" = "Windows" ]; then
-            cp $(find $B -name "*-setup.exe" | head -n1) "out/Northstar.Control.Setup.$VERSION.exe"
+            cp "$(find $B -name "*-setup.exe" | head -n1)" "out/Northstar.Control.Setup.$VERSION.exe"
           else
             ARCH=$([ "${{ matrix.platform }}" = "Linux-arm64" ] && echo arm64 || echo x86_64)
-            cp $(find $B -name "*.AppImage" | head -n1) "out/Northstar.Control-$VERSION-$ARCH.AppImage"
-            cp $(find $B -name "*.deb" | head -n1) "out/Northstar.Control-$VERSION-$ARCH.deb"
-            cp $(find $B -name "*.rpm" | head -n1) "out/Northstar.Control-$VERSION-$ARCH.rpm"
+            cp "$(find $B -name "*.AppImage" | head -n1)" "out/Northstar.Control-$VERSION-$ARCH.AppImage"
+            cp "$(find $B -name "*.deb" | head -n1)" "out/Northstar.Control-$VERSION-$ARCH.deb"
+            cp "$(find $B -name "*.rpm" | head -n1)" "out/Northstar.Control-$VERSION-$ARCH.rpm"
           fi
           ls -l out
 
