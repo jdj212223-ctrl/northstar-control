@@ -74,15 +74,15 @@ jobs:
       - name: Check web source syntax
         run: node --check app/app.js && node --check app/bench.js && node --check app/tauri-bridge.js
 
-      - name: Test Rust modules
-        working-directory: src-tauri
-        run: cargo test --lib
-
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2" --locked
 
       - name: Generate icons
         run: cargo tauri icon assets/northstar.png
+
+      - name: Test Rust modules
+        working-directory: src-tauri
+        run: cargo test --lib
 
       - name: Build installers
         run: cargo tauri build ${{ matrix.args }}
