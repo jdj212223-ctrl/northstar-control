@@ -65,8 +65,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes flatpak flatpak-builder
           sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
       - name: Build installers
+        env:
+          DEBUG: ${{ matrix.platform == 'Linux' && '@malept/flatpak-bundler' || '' }}
         run: npm run ${{ matrix.script }}
 
       - name: Upload installers
