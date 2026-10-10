@@ -3,10 +3,10 @@
 const crypto = require("node:crypto");
 
 const PLANS = Object.freeze({
-  free: { id: "free", name: "Free", priceCents: 0, devices: 1, remoteCommands: false, perks: ["Live monitoring", "Activity monitor", "1 paired computer"] },
-  plus: { id: "plus", name: "Plus", priceCents: 200, devices: 3, remoteCommands: true, perks: ["Remote battery & power-profile commands", "3 paired computers"] },
-  pro: { id: "pro", name: "Pro", priceCents: 500, devices: 10, remoteCommands: true, perks: ["Everything in Plus", "10 paired computers"] },
-  max: { id: "max", name: "Max", priceCents: 900, devices: 25, remoteCommands: true, perks: ["Everything in Pro", "25 paired computers", "Priority email support"] },
+  free: { id: "free", name: "Free", priceCents: 0, devices: 3, remoteCommands: false, perks: ["Live monitoring", "Activity monitor", "3 paired computers"] },
+  plus: { id: "plus", name: "Plus", priceCents: 200, devices: 5, remoteCommands: true, perks: ["Remote battery & power-profile commands", "5 paired computers"] },
+  pro: { id: "pro", name: "Pro", priceCents: 500, devices: 15, remoteCommands: true, perks: ["Everything in Plus", "15 paired computers"] },
+  max: { id: "max", name: "Max", priceCents: 900, devices: 30, remoteCommands: true, perks: ["Everything in Pro", "30 paired computers", "Priority email support"] },
   business: { id: "business", name: "Professional", priceCents: 1900, devices: 100, remoteCommands: true, perks: ["Everything in Max", "100 paired computers", "Business support and Stripe invoices"] }
 });
 const PAID_IDS = Object.freeze(["plus", "pro", "max", "business"]);
