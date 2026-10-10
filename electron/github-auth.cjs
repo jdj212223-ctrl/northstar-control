@@ -10,9 +10,9 @@ const PROFILE_ENDPOINT = "https://api.github.com/user";
 const VERIFICATION_URI = "https://github.com/login/device";
 const API_VERSION = "2022-11-28";
 
-function createGitHubAuth({ safeStorage, storagePath, fetchImpl = globalThis.fetch, now = Date.now }) {
+function createGitHubAuth({ safeStorage, storagePath, fetchImpl = globalThis.fetch, now = Date.now, defaultClientId = "" }) {
   let pendingFlow = null;
-  let clientId = "";
+  let clientId = CLIENT_ID_PATTERN.test(defaultClientId) ? defaultClientId : "";
   let storedProfile = null;
   let storedAccessToken = null;
   let initialization;

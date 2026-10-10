@@ -128,7 +128,7 @@ function boundedTelemetry(value) {
 
 function createRemoteServer({
   allowedOrigins = ["https://jdj212223-ctrl.github.io"],
-  clientId = process.env.GITHUB_CLIENT_ID || "",
+  clientId = process.env.GITHUB_CLIENT_ID || "Ov23liuh8l0EjSIdKmzt",
   databasePath = process.env.NORTHSTAR_DB_PATH || path.join(process.cwd(), "server-data", "northstar.sqlite"),
   fetchImpl = globalThis.fetch,
   trustProxy = false,

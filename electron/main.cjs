@@ -30,6 +30,7 @@ const validProfiles = new Set(["Efficiency", "Balanced", "Performance"]);
 let githubAuth;
 let remoteAgent;
 let updater;
+const DEFAULT_GITHUB_CLIENT_ID = "Ov23liuh8l0EjSIdKmzt";
 const windowsSystemRoot = process.env.SystemRoot || "C:\\Windows";
 const windowsPowerCfg = path.join(windowsSystemRoot, "System32", "powercfg.exe");
 const windowsPowerShell = path.join(windowsSystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -535,6 +536,7 @@ if (isElectron) {
   app.whenReady().then(() => {
     if (process.platform === "linux") safeStorage.setUsePlainTextEncryption(false);
     githubAuth = createGitHubAuth({
+      defaultClientId: DEFAULT_GITHUB_CLIENT_ID,
       safeStorage,
       storagePath: path.join(app.getPath("userData"), "github-account.json")
     });
