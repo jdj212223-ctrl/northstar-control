@@ -2,6 +2,7 @@
   "use strict";
 
   let platform = detectPlatform();
+  const NORTHSTAR_SERVICE_URL = "https://northstar-control.fly.dev";
   const nativeApp = Boolean(window.northstar);
   const views = [...document.querySelectorAll(".page-view")];
   const navItems = [...document.querySelectorAll(".nav-item[data-view]")];
@@ -421,7 +422,6 @@
         if (!nativeApp) return;
         try {
           const status = await window.northstar.remote.getStatus();
-          const serverInput = document.getElementById("remote-server-url");
           
           const pairButton = document.getElementById("remote-pair-button");
           const unpairButton = document.getElementById("remote-unpair-button");
@@ -430,7 +430,7 @@
           codeInput.disabled = status.paired;
           unpairButton.hidden = !status.paired;
           const message = status.paired
-            ? `${status.device.name} is paired · ${status.connected ? "connected and sharing live status" : "reconnecting to remote service"}`
+            ? `${status.device.name} is paired · ${status.connected ? "connected and sharing live status" : "reconnecting"}`
             : "This computer is not paired to a remote account.";
           document.getElementById("remote-device-status").textContent = message;
         } catch {
@@ -446,16 +446,16 @@
         try {
           const system = await window.northstar.getSystemStatus();
           const result = await window.northstar.remote.pair({
-            serverUrl: document.getElementById("remote-server-url").value,
+            serverUrl: NORTHSTAR_SERVICE_URL,
             code: document.getElementById("remote-pairing-code").value,
             name: system.hostname || document.getElementById("device-name").textContent
           });
           if (!result.ok) {
             const messages = {
-              "invalid-server-url": "Use an HTTPS remote-service URL (HTTP is permitted only for localhost testing).",
+              "invalid-server-url": "The Northstar service address is invalid.",
               "invalid-pairing-code": "Enter the one-time pairing code shown by the signed-in web dashboard.",
               "secure-storage-unavailable": "Pairing is disabled because OS-backed secure storage is unavailable.",
-              "server-unreachable": "Could not reach the remote service.",
+              "server-unreachable": "Could not reach Northstar. Try again in a moment.",
               "pairing-code-invalid-or-expired": "That pairing code expired or was already used. Generate a new code on the website."
             };
             status.textContent = messages[result.reason] || `Pairing failed: ${result.reason}.`;
@@ -466,7 +466,7 @@
           await refreshRemoteStatus();
           showToast("This computer is paired. It will share live status with the account.");
         } catch {
-          status.textContent = "Pairing failed. Check the service URL and try again.";
+          status.textContent = "Pairing failed. Check the code and try again.";
           button.disabled = false;
         }
       }
