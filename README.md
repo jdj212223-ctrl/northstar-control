@@ -89,7 +89,7 @@ the Flatpak bundle, first set up Flatpak and Flathub for your distribution, then
 run:
 
 ```sh
-flatpak install --user ./Northstar.Control-1.2.4.flatpak
+flatpak install --user ./Northstar.Control-1.2.4-x86_64.flatpak
 flatpak run org.northstar.control
 ```
 
