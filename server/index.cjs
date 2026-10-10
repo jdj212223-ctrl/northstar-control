@@ -152,7 +152,28 @@ function createRemoteServer({
     );
   `);
 
-  const sessions = new Map();
+  db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+    id_hash TEXT PRIMARY KEY,
+    account_json TEXT NOT NULL,
+    csrf_token TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  )`);
+  // Sessions live in SQLite (keyed by a hash of the cookie value) so sign-ins survive restarts and deploys.
+  const sessions = {
+    get(id) {
+      const row = db.prepare("SELECT account_json, csrf_token, expires_at FROM sessions WHERE id_hash = ?").get(digest(id));
+      return row ? { account: JSON.parse(row.account_json), csrfToken: row.csrf_token, expiresAt: row.expires_at } : undefined;
+    },
+    set(id, value) {
+      db.prepare("INSERT OR REPLACE INTO sessions (id_hash, account_json, csrf_token, expires_at) VALUES (?, ?, ?, ?)")
+        .run(digest(id), JSON.stringify(value.account), value.csrfToken, value.expiresAt);
+    },
+    delete(id) { db.prepare("DELETE FROM sessions WHERE id_hash = ?").run(digest(id)); },
+    get size() {
+      db.prepare("DELETE FROM sessions WHERE expires_at <= ?").run(now());
+      return db.prepare("SELECT COUNT(*) AS count FROM sessions").get().count;
+    }
+  };
   const flows = new Map();
   const pairCodes = new Map();
   const connectedDevices = new Map();
