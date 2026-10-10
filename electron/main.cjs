@@ -12,6 +12,7 @@ const { promisify } = require("node:util");
 const { createGitHubAuth } = require("./github-auth.cjs");
 const { createRemoteAgent } = require("./remote-agent.cjs");
 const { createMacHardwareHelper } = require("./mac-hardware-helper.cjs");
+const { getProcessActivity } = require("./activity-monitor.cjs");
 
 const execFileAsync = promisify(execFile);
 const powerPlanIds = Object.freeze({
@@ -452,6 +453,7 @@ function registerIpc() {
     const expected = pathToFileURL(path.join(__dirname, "..", "app", "index.html")).href;
     if (event.senderFrame?.url !== expected) throw new Error("Rejected IPC from an untrusted renderer");
   }
+  ipcMain.handle("system:activity", (event) => { assertLocalRenderer(event); return getProcessActivity(); });
   ipcMain.handle("system:status", (event) => { assertLocalRenderer(event); return getSystemStatus(); });
   ipcMain.handle("system:devices", (event) => { assertLocalRenderer(event); return getDevices(); });
   ipcMain.handle("system:set-power-profile", (event, profile) => { assertLocalRenderer(event); return setPowerProfile(profile); });
@@ -563,4 +565,4 @@ if (isElectron) {
   app.on("before-quit", () => remoteAgent?.stop());
 }
 
-module.exports = { getSystemStatus, getDevices, setPowerProfile, setChargeLimit, setFanProfile, getMacHelperAccessMessage };
+module.exports = { getSystemStatus, getDevices, getProcessActivity, setPowerProfile, setChargeLimit, setFanProfile, getMacHelperAccessMessage };

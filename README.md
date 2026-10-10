@@ -19,6 +19,9 @@ remain unavailable.
 
 - macOS, Windows, and Linux host monitoring for available CPU, memory, battery,
   thermal, fan-sensor, and connected-device information.
+- An Activity Monitor view that ranks visible applications by OS-reported
+  process CPU and memory, with executable names/paths but no command arguments.
+  CPU metrics include integrated CPU and SoC CPU work where the OS reports it.
 - Windows power plans, Linux `power-profiles-daemon` profiles, and a Linux
   battery charge threshold when the device exposes a writable sysfs control.
 - GitHub account sign-in through OAuth Device Flow. GitHub identity is separate
@@ -33,6 +36,11 @@ controls exist. Fan controls on Windows and Linux, USB power switching, and
 overclocking are not enabled because they require validated hardware-specific
 drivers and safety limits. GPU load and battery health are unavailable until
 reliable platform APIs are supported.
+
+GPU utilization (including integrated/SoC graphics), per-application power
+attribution, and system-wide per-application FPS are not reported unless a
+supported driver or platform API exposes them. The Activity Monitor leaves
+those readings unavailable rather than estimating them.
 
 On Apple Silicon macOS, optional fan profiles and MacBook charge limits can use
 the independently signed and notarized `smctl` helper. Download the Apple
@@ -91,9 +99,9 @@ ARM64 Linux host. To install a release Flatpak, first set up Flatpak and Flathub
 for your distribution, then use the bundle matching your device architecture:
 
 ```sh
-flatpak install --user ./Northstar.Control-1.2.4-x86_64.flatpak
+flatpak install --user ./Northstar.Control-1.2.5-x86_64.flatpak
 # On ARM64 Linux:
-flatpak install --user ./Northstar.Control-1.2.4-aarch64.flatpak
+flatpak install --user ./Northstar.Control-1.2.5-aarch64.flatpak
 flatpak run org.northstar.control
 ```
 

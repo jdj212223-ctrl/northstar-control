@@ -21,6 +21,7 @@
         <div class="nav-label">WORKSPACE</div>
         <nav class="primary-nav" aria-label="Main navigation">
           <button class="nav-item active" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
+          <button class="nav-item" data-view="activity"><span class="nav-icon">▤</span>Activity monitor</button>
           <button class="nav-item" data-view="cooling"><span class="nav-icon">◌</span>Cooling<span class="nav-badge">3</span></button>
           <button class="nav-item" data-view="power"><span class="nav-icon">ϟ</span>Power &amp; battery</button>
           <button class="nav-item" data-view="performance"><span class="nav-icon">⌁</span>Performance</button>
@@ -132,6 +133,39 @@
             </section>
             <div class="safety-note"><span>◇</span><p><strong>Your hardware, your call.</strong> Changes are never applied without your approval.</p></div>
           </div>
+        </section>
+
+        <section class="page-view detail-view" id="view-activity">
+          <div class="page-heading">
+            <div><div class="eyebrow"><span class="eyebrow-line"></span> LIVE PROCESS TELEMETRY</div><h1>See what’s <em>working.</em></h1><p class="page-subtitle">Rank applications by the resources your operating system reports.</p></div>
+            <button class="button button-secondary" id="activity-refresh"><span class="refresh-icon">↻</span> Refresh activity</button>
+          </div>
+          <div class="activity-summary-grid">
+            <article class="activity-summary-card"><span>CPU · iCPU / SoC</span><strong id="activity-cpu">—</strong><small>System-wide load</small></article>
+            <article class="activity-summary-card unavailable"><span>GPU · iGPU / dGPU / SoC</span><strong>—</strong><small>Driver counter unavailable</small></article>
+            <article class="activity-summary-card unavailable"><span>POWER USAGE</span><strong>—</strong><small>Wattage unavailable</small></article>
+            <article class="activity-summary-card"><span>BATTERY</span><strong id="activity-battery">—</strong><small id="activity-battery-detail">Battery telemetry unavailable</small></article>
+            <article class="activity-summary-card"><span>MEMORY</span><strong id="activity-memory">—</strong><small id="activity-memory-detail">System memory in use</small></article>
+            <article class="activity-summary-card unavailable"><span>FPS</span><strong>—</strong><small>App-specific; not reported</small></article>
+          </div>
+          <section class="panel activity-monitor-panel">
+            <div class="panel-heading"><div><h2>Applications &amp; processes</h2><p>Highest usage first · grouped by executable</p></div><span class="last-updated" id="activity-updated">Waiting for desktop app</span></div>
+            <div class="activity-categories" role="group" aria-label="Rank applications by resource">
+              <button class="activity-category selected" type="button" data-activity-metric="cpu" aria-pressed="true">CPU / iCPU</button>
+              <button class="activity-category" type="button" data-activity-metric="gpu" aria-pressed="false">GPU / iGPU</button>
+              <button class="activity-category" type="button" data-activity-metric="power" aria-pressed="false">Power</button>
+              <button class="activity-category" type="button" data-activity-metric="memory" aria-pressed="false">Memory</button>
+              <button class="activity-category" type="button" data-activity-metric="fps" aria-pressed="false">FPS</button>
+            </div>
+            <p class="activity-capability-note" id="activity-capability-note">CPU readings include OS-reported iCPU and SoC work. Command arguments are hidden to avoid exposing secrets.</p>
+            <div class="activity-table-wrap" id="activity-table-wrap">
+              <table class="activity-table">
+                <thead><tr><th>APPLICATION</th><th>EXECUTABLE COMMAND</th><th id="activity-usage-heading">CPU USAGE</th><th>PROCESSES</th></tr></thead>
+                <tbody id="activity-process-list"><tr><td colspan="4" class="activity-empty">Open the Northstar desktop app to read local process statistics.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="activity-unavailable" id="activity-unavailable" hidden></div>
+          </section>
         </section>
 
         <section class="page-view detail-view" id="view-cooling">

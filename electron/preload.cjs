@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("northstar", Object.freeze({
   getSystemStatus: () => ipcRenderer.invoke("system:status"),
+  getActivity: () => ipcRenderer.invoke("system:activity"),
   getDevices: () => ipcRenderer.invoke("system:devices"),
   setPowerProfile: (profile) => ipcRenderer.invoke("system:set-power-profile", profile),
   setChargeLimit: (enabled) => ipcRenderer.invoke("system:set-charge-limit", enabled),

@@ -59,6 +59,9 @@ jobs:
       - name: Check source syntax
         run: npm run check
 
+      - name: Test activity monitor on runner
+        run: node --test tests/activity-monitor.test.cjs
+
       - name: Install Flatpak build tools
         if: matrix.platform == 'Linux'
         run: |
@@ -115,6 +118,9 @@ jobs:
 
       - name: Check source syntax
         run: npm run check
+
+      - name: Test activity monitor on ARM64 runner
+        run: node --test tests/activity-monitor.test.cjs
 
       - name: Install Flatpak build tools
         run: |

@@ -17,6 +17,8 @@
   const cpuHistory = [];
   const memoryHistory = [];
   const temperatureHistory = [];
+  let activityMetric = "cpu";
+  let activityProcesses = [];
   document.getElementById("current-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).toUpperCase();
 
   function detectPlatform() {
@@ -71,8 +73,10 @@
     if (!target) return;
     views.forEach((view) => view.classList.toggle("active", view === target));
     navItems.forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-    document.getElementById("breadcrumb-current").textContent = name === "power" ? "Power & battery" : name[0].toUpperCase() + name.slice(1);
+    const breadcrumbNames = { power: "Power & battery", activity: "Activity monitor" };
+    document.getElementById("breadcrumb-current").textContent = breadcrumbNames[name] || name[0].toUpperCase() + name.slice(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    if (name === "activity") refreshActivity();
   }
 
   navItems.forEach((item) => item.addEventListener("click", () => showView(item.dataset.view)));
@@ -613,6 +617,104 @@
     }
   }
 
+  function setActivityMetric(metric) {
+    if (!["cpu", "gpu", "power", "memory", "fps"].includes(metric)) return;
+    activityMetric = metric;
+    document.querySelectorAll(".activity-category").forEach((button) => {
+      const selected = button.dataset.activityMetric === metric;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    document.getElementById("activity-usage-heading").textContent = `${metric === "fps" ? "FPS" : metric.toUpperCase()} USAGE`;
+    const explanations = {
+      cpu: "CPU usage includes OS-reported iCPU and SoC work. Executable commands are shown without arguments to avoid exposing secrets.",
+      memory: "Memory is the working set summed across each executable’s processes. Command arguments are hidden to avoid exposing secrets.",
+      gpu: "GPU utilization for integrated graphics, discrete GPUs, and SoC graphics requires driver counters this host does not expose. No GPU values are estimated.",
+      power: "Per-application power attribution is not exposed by this system. Northstar does not guess per-app wattage.",
+      fps: "Frame rate is specific to each running app and is not exposed system-wide for other processes."
+    };
+    document.getElementById("activity-capability-note").textContent = explanations[metric];
+    const available = metric === "cpu" || metric === "memory";
+    document.getElementById("activity-table-wrap").hidden = !available;
+    const unavailable = document.getElementById("activity-unavailable");
+    unavailable.hidden = available;
+    if (!available) unavailable.textContent = explanations[metric];
+    else renderActivityProcesses();
+  }
+
+  function renderActivityProcesses() {
+    const list = document.getElementById("activity-process-list");
+    list.replaceChildren();
+    const sorted = [...activityProcesses].sort((left, right) => {
+      const leftUsage = activityMetric === "memory" ? left.memoryBytes : left.cpuPercent;
+      const rightUsage = activityMetric === "memory" ? right.memoryBytes : right.cpuPercent;
+      if (!Number.isFinite(leftUsage)) return Number.isFinite(rightUsage) ? 1 : 0;
+      if (!Number.isFinite(rightUsage)) return -1;
+      return rightUsage - leftUsage;
+    });
+    if (!sorted.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 4;
+      cell.className = "activity-empty";
+      cell.textContent = "No process activity was reported by the operating system.";
+      row.append(cell);
+      list.append(row);
+      return;
+    }
+    for (const process of sorted.slice(0, 100)) {
+      const row = document.createElement("tr");
+      const appCell = document.createElement("td");
+      const appName = document.createElement("strong");
+      appName.textContent = process.name;
+      appCell.append(appName);
+      const commandCell = document.createElement("td");
+      const command = document.createElement("code");
+      command.textContent = process.command;
+      command.title = process.command;
+      commandCell.append(command);
+      const usageCell = document.createElement("td");
+      usageCell.className = "activity-usage";
+      if (activityMetric === "memory") {
+        usageCell.textContent = formatActivityMemory(process.memoryBytes);
+      } else {
+        usageCell.textContent = Number.isFinite(process.cpuPercent) ? `${process.cpuPercent.toFixed(1)}%` : "Sampling…";
+      }
+      const countCell = document.createElement("td");
+      countCell.textContent = String(process.processCount);
+      row.append(appCell, commandCell, usageCell, countCell);
+      list.append(row);
+    }
+  }
+
+  function formatActivityMemory(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return "—";
+    const megabytes = bytes / (1024 * 1024);
+    return megabytes >= 1024 ? `${(megabytes / 1024).toFixed(2)} GB` : `${megabytes.toFixed(0)} MB`;
+  }
+
+  async function refreshActivity() {
+    if (!nativeApp) {
+      document.getElementById("activity-updated").textContent = "Desktop app required";
+      return;
+    }
+    try {
+      const [activity, status] = await Promise.all([window.northstar.getActivity(), window.northstar.getSystemStatus()]);
+      activityProcesses = activity.processes;
+      document.getElementById("activity-cpu").textContent = status.cpuLoad === null ? "—" : `${status.cpuLoad}%`;
+      document.getElementById("activity-battery").textContent = status.battery ? `${status.battery.percent}%` : "—";
+      document.getElementById("activity-battery-detail").textContent = status.battery ? status.battery.status : "Battery telemetry unavailable";
+      const memoryUsed = status.memoryTotalBytes - status.memoryFreeBytes;
+      document.getElementById("activity-memory").textContent = formatActivityMemory(memoryUsed);
+      document.getElementById("activity-memory-detail").textContent = `of ${formatActivityMemory(status.memoryTotalBytes)} total`;
+      document.getElementById("activity-updated").textContent = `Updated ${new Date(activity.capturedAt).toLocaleTimeString()}`;
+      if (activityMetric === "cpu" || activityMetric === "memory") renderActivityProcesses();
+    } catch {
+      document.getElementById("activity-updated").textContent = "Activity query failed";
+      showToast("Could not read application activity from the operating system.");
+    }
+  }
+
   function renderDevices(devices) {
     const list = document.getElementById("device-list");
     list.replaceChildren();
@@ -668,6 +770,13 @@
     refreshStatus();
   });
   document.getElementById("scan-button").addEventListener("click", refreshDevices);
+  document.getElementById("activity-refresh").addEventListener("click", (event) => {
+    event.currentTarget.querySelector(".refresh-icon").animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 420 });
+    refreshActivity();
+  });
+  document.querySelectorAll(".activity-category").forEach((button) => {
+    button.addEventListener("click", () => setActivityMetric(button.dataset.activityMetric));
+  });
   document.querySelectorAll('input[type="checkbox"][data-setting]').forEach((input) => {
     input.addEventListener("change", () => {
       const enabled = input.checked;
@@ -697,6 +806,9 @@
     refreshRemoteStatus();
     window.setInterval(refreshStatus, 10000);
     window.setInterval(refreshRemoteStatus, 5000);
+    window.setInterval(() => {
+      if (document.getElementById("view-activity").classList.contains("active")) refreshActivity();
+    }, 5000);
   } else {
     document.getElementById("app-state").textContent = "DESKTOP APP REQUIRED";
     document.getElementById("connection-label").textContent = "Desktop app required";
