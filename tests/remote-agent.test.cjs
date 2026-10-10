@@ -65,6 +65,7 @@ test("remote agent stores pairing credentials encrypted and requires local confi
     allowedOrigins: [origin],
     clientId: "NorthstarClient123456",
     databasePath: ":memory:",
+    stripeWebhookSecret: "whsec_test",
     fetchImpl: githubFetch
   });
   await new Promise((resolve) => remote.server.listen(0, "127.0.0.1", resolve));
@@ -113,6 +114,10 @@ test("remote agent stores pairing credentials encrypted and requires local confi
     body: { flowId: flow.flowId }
   });
   const cookie = signedIn.response.headers.get("set-cookie").match(/__Host-northstar_session=[^;]+/)[0];
+  const payload = JSON.stringify({ type: "checkout.session.completed", data: { object: { mode: "subscription", client_reference_id: String(signedIn.data.account.id), customer: "cus_1", subscription: "sub_1", metadata: { plan: "plus" } } } });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = require("node:crypto").createHmac("sha256", "whsec_test").update(`${timestamp}.${payload}`).digest("hex");
+  await fetch(`${baseUrl}/api/stripe/webhook`, { method: "POST", headers: { "Content-Type": "application/json", "Stripe-Signature": `t=${timestamp},v1=${signature}` }, body: payload });
   const code = await jsonRequest(baseUrl, "/api/device/pair-code", {
     method: "POST",
     cookie,

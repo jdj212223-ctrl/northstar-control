@@ -21,6 +21,7 @@
         <nav class="primary-nav" aria-label="Main navigation">
           <button class="nav-item active" data-view="overview" aria-current="page"><span>◫</span>Overview</button>
           <button class="nav-item" data-view="devices"><span>▣</span>Computers <i>0</i></button>
+          <button class="nav-item" data-view="plans"><span>✦</span>Plans</button>
           <button class="nav-item" data-view="settings"><span>⚙</span>Account &amp; settings</button>
         </nav>
         <div class="sidebar-bottom">
@@ -119,6 +120,13 @@
             <div><span class="check-number">03</span><span><strong>Approve individual changes</strong><small>Power and battery requests display a native confirmation on the paired computer.</small></span><b>ON DEVICE</b></div>
           </div>
           <footer class="footer"><span>Device list is intentionally empty</span><span>No remote control commands are sent</span></footer>
+        </section>
+
+        <section class="view" id="view-plans" hidden>
+          <div class="heading-row"><div><div class="eyebrow">SUPPORT NORTHSTAR <span>·</span> PLANS</div><h1>Pick a <em>plan.</em></h1><p class="subtitle">Monitoring stays free. Paid plans add small extras and help keep Northstar maintained. Cancel any time.</p></div></div>
+          <div class="notice notice-amber" id="plans-notice" role="status"><span class="notice-icon">!</span><div><strong id="plans-title">Sign in to choose a plan</strong><p id="plans-copy">Plans are tied to your GitHub account.</p></div></div>
+          <div class="feature-grid" id="plans-grid"></div>
+          <button class="button button-secondary" id="manage-billing" hidden>Manage subscription</button>
         </section>
 
         <section class="view" id="view-settings" hidden>

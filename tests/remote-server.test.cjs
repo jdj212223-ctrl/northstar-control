@@ -12,6 +12,8 @@ async function startServer(context, fetchImpl) {
     allowedOrigins: [origin],
     clientId: "NorthstarClient123456",
     databasePath: ":memory:",
+    stripeSecretKey: "sk_test_x",
+    stripeWebhookSecret: "whsec_test",
     fetchImpl
   });
   await new Promise((resolve) => remote.server.listen(0, "127.0.0.1", resolve));
@@ -34,6 +36,20 @@ async function request(baseUrl, route, { method = "GET", body, cookie, csrf, req
     body: body === undefined ? undefined : JSON.stringify(body)
   });
   return { response, data: await response.json() };
+}
+
+async function grantPlan(baseUrl, ownerId, plan, type = "checkout.session.completed") {
+  const payload = JSON.stringify({
+    type,
+    data: { object: { mode: "subscription", client_reference_id: String(ownerId), customer: "cus_1", subscription: "sub_1", id: "sub_1", status: "active", metadata: { plan, owner_id: String(ownerId) } } }
+  });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = require("node:crypto").createHmac("sha256", "whsec_test").update(`${timestamp}.${payload}`).digest("hex");
+  return fetch(`${baseUrl}/api/stripe/webhook`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Stripe-Signature": `t=${timestamp},v1=${signature}` },
+    body: payload
+  });
 }
 
 async function authorize(baseUrl) {
@@ -79,6 +95,7 @@ test("remote API signs in, pairs a device, relays telemetry and approved command
   };
   const { baseUrl } = await startServer(context, fetchImpl);
   const owner = await authorize(baseUrl);
+  assert.equal((await grantPlan(baseUrl, 123, "plus")).status, 200);
 
   const csrfRejected = await request(baseUrl, "/api/device/pair-code", {
     method: "POST",
@@ -186,4 +203,27 @@ test("remote API requires same-site authentication for pairing and commands", as
     body: {}
   });
   assert.equal(missingCsrf.response.status, 401);
+});
+
+test("plans limit devices and remote commands, and webhooks need a valid signature", async (context) => {
+  const { baseUrl } = await startServer(context, async (url) => ({
+    ok: true,
+    json: async () => (String(url).includes("device/code")
+      ? { device_code: "dc", user_code: "ABCD-1234", verification_uri: "https://github.com/login/device", expires_in: 900, interval: 5 }
+      : String(url).includes("access_token") ? { access_token: "tok" }
+      : { id: 321, login: "free-user", name: "Free", avatar_url: "https://avatars.githubusercontent.com/u/1", html_url: "https://github.com/free-user" })
+  }));
+  const forged = await fetch(`${baseUrl}/api/stripe/webhook`, { method: "POST", headers: { "Content-Type": "application/json", "Stripe-Signature": "t=1,v1=00" }, body: "{}" });
+  assert.equal(forged.status, 400);
+  const owner = await authorize(baseUrl);
+  const session = await request(baseUrl, "/api/auth/session", { cookie: owner.cookie });
+  assert.equal(session.data.plan, "free");
+  const command = await request(baseUrl, "/api/devices/00000000-0000-4000-8000-000000000000/commands", { method: "POST", cookie: owner.cookie, csrf: owner.csrf, body: {} });
+  assert.equal(command.response.status, 402);
+  assert.equal((await request(baseUrl, "/api/device/pair-code", { method: "POST", cookie: owner.cookie, csrf: owner.csrf, body: {} })).response.status, 201);
+  const ownerId = owner.account.id;
+  assert.equal((await grantPlan(baseUrl, ownerId, "pro")).status, 200);
+  assert.equal((await request(baseUrl, "/api/auth/session", { cookie: owner.cookie })).data.plan, "pro");
+  assert.equal((await grantPlan(baseUrl, ownerId, "pro", "customer.subscription.deleted")).status, 200);
+  assert.equal((await request(baseUrl, "/api/auth/session", { cookie: owner.cookie })).data.plan, "free");
 });

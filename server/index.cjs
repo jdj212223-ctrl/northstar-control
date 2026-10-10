@@ -7,6 +7,7 @@ const http = require("node:http");
 const { isIP } = require("node:net");
 const { DatabaseSync } = require("node:sqlite");
 const { WebSocketServer, WebSocket } = require("ws");
+const billing = require("./billing.cjs");
 
 const DEVICE_CODE_URL = "https://github.com/login/device/code";
 const ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
@@ -29,6 +30,24 @@ function json(response, status, value, headers = {}) {
     ...headers
   });
   response.end(JSON.stringify(value));
+}
+
+function readRaw(request) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    request.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > 256 * 1024) {
+        reject(Object.assign(new Error("Request body is too large"), { statusCode: 413 }));
+        request.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    request.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    request.on("error", reject);
+  });
 }
 
 function readJson(request) {
@@ -131,6 +150,9 @@ function createRemoteServer({
   clientId = process.env.GITHUB_CLIENT_ID || "Ov23liuh8l0EjSIdKmzt",
   databasePath = process.env.NORTHSTAR_DB_PATH || path.join(process.cwd(), "server-data", "northstar.sqlite"),
   fetchImpl = globalThis.fetch,
+  stripeSecretKey = process.env.STRIPE_SECRET_KEY || "",
+  stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "",
+  siteUrl = process.env.NORTHSTAR_SITE_URL || "https://jdj212223-ctrl.github.io/northstar-control/",
   trustProxy = false,
   now = Date.now
 } = {}) {
@@ -159,6 +181,18 @@ function createRemoteServer({
     expires_at INTEGER NOT NULL
   )`);
   // Sessions live in SQLite (keyed by a hash of the cookie value) so sign-ins survive restarts and deploys.
+  db.exec(`CREATE TABLE IF NOT EXISTS subscriptions (
+    owner_id TEXT PRIMARY KEY,
+    plan TEXT NOT NULL,
+    status TEXT NOT NULL,
+    customer_id TEXT,
+    subscription_id TEXT,
+    updated_at INTEGER NOT NULL
+  )`);
+  const getSubscription = (ownerId) => db.prepare("SELECT * FROM subscriptions WHERE owner_id = ?").get(String(ownerId));
+  const getPlan = (ownerId) => billing.planFor(getSubscription(ownerId));
+  const plansForClient = () => Object.values(billing.PLANS).map(({ id, name, priceCents, devices, perks }) => ({ id, name, priceCents, devices, perks }));
+
   const sessions = {
     get(id) {
       const row = db.prepare("SELECT account_json, csrf_token, expires_at FROM sessions WHERE id_hash = ?").get(digest(id));
@@ -273,8 +307,58 @@ function createRemoteServer({
         const session = getSession(request);
         return json(response, 200, {
           account: session ? session.account : null,
-          csrfToken: session ? session.csrfToken : null
+          csrfToken: session ? session.csrfToken : null,
+          plan: session ? getPlan(session.account.id).id : null,
+          plans: plansForClient(),
+          billingEnabled: Boolean(stripeSecretKey)
         }, headers);
+      }
+      if (route === "POST /api/billing/checkout") {
+        const session = requireSession(request, response, true, headers);
+        if (!session) return;
+        if (!stripeSecretKey) return json(response, 503, { error: "billing-not-configured" }, headers);
+        const body = await readJson(request);
+        if (typeof body.plan !== "string" || !billing.PAID_IDS.includes(body.plan)) return json(response, 400, { error: "invalid-plan" }, headers);
+        const existing = getSubscription(session.account.id);
+        if (existing && ["active", "trialing", "past_due"].includes(existing.status)) return json(response, 409, { error: "manage-existing-subscription" }, headers);
+        try {
+          const checkout = await billing.createCheckout({ secretKey: stripeSecretKey, fetchImpl, planId: body.plan, account: session.account, returnUrl: siteUrl, customerId: existing?.customer_id });
+          return json(response, 200, { url: checkout.url }, headers);
+        } catch {
+          return json(response, 502, { error: "billing-unavailable" }, headers);
+        }
+      }
+      if (route === "POST /api/billing/portal") {
+        const session = requireSession(request, response, true, headers);
+        if (!session) return;
+        const existing = getSubscription(session.account.id);
+        if (!stripeSecretKey || !existing?.customer_id) return json(response, 404, { error: "no-subscription" }, headers);
+        try {
+          const portal = await billing.createPortal({ secretKey: stripeSecretKey, fetchImpl, customerId: existing.customer_id, returnUrl: siteUrl });
+          return json(response, 200, { url: portal.url }, headers);
+        } catch {
+          return json(response, 502, { error: "billing-unavailable" }, headers);
+        }
+      }
+      if (route === "POST /api/stripe/webhook") {
+        const raw = await readRaw(request);
+        if (!billing.verifyStripeSignature(raw, request.headers["stripe-signature"], stripeWebhookSecret, now())) return json(response, 400, { error: "invalid-signature" });
+        let event;
+        try { event = JSON.parse(raw); } catch { return json(response, 400, { error: "invalid-json" }); }
+        const object = event?.data?.object || {};
+        const save = (ownerId, plan, status, customerId, subscriptionId) => {
+          if (!ownerId || !billing.PLANS[plan]) return;
+          db.prepare(`INSERT INTO subscriptions (owner_id, plan, status, customer_id, subscription_id, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(owner_id) DO UPDATE SET plan = excluded.plan, status = excluded.status, customer_id = excluded.customer_id, subscription_id = excluded.subscription_id, updated_at = excluded.updated_at`)
+            .run(String(ownerId), plan, status, customerId || null, subscriptionId || null, now());
+        };
+        if (event.type === "checkout.session.completed" && object.mode === "subscription") {
+          save(object.client_reference_id, object.metadata?.plan, "active", object.customer, object.subscription);
+        } else if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
+          const status = event.type === "customer.subscription.deleted" ? "canceled" : String(object.status || "canceled");
+          save(object.metadata?.owner_id, object.metadata?.plan, status, object.customer, object.id);
+        }
+        return json(response, 200, { received: true });
       }
       if (route === "POST /api/auth/device/start") {
         if (!checkOrigin(request)) return json(response, 403, { error: "origin-not-allowed" }, headers);
@@ -427,7 +511,7 @@ function createRemoteServer({
         for (const [key, pair] of pairCodes) if (pair.expiresAt <= now()) pairCodes.delete(key);
         if (pairCodes.size >= 10000) return json(response, 503, { error: "too-many-pairing-codes" }, headers);
         const ownedCount = db.prepare("SELECT COUNT(*) AS count FROM devices WHERE owner_id = ?").get(session.account.id).count;
-        if (ownedCount >= 50) return json(response, 409, { error: "device-limit-reached" }, headers);
+        if (ownedCount >= getPlan(session.account.id).devices) return json(response, 402, { error: "device-limit-reached" }, headers);
         const body = await readJson(request);
         if (body.name !== undefined && !validDeviceName(body.name)) return json(response, 400, { error: "invalid-device-name" }, headers);
         let code = "";
@@ -477,6 +561,7 @@ function createRemoteServer({
       if (deviceMatch && request.method === "POST" && deviceMatch[2] === "commands") {
         const session = requireSession(request, response, true, headers);
         if (!session) return;
+        if (!getPlan(session.account.id).remoteCommands) return json(response, 402, { error: "plan-required" }, headers);
         const id = deviceMatch[1];
         const owned = db.prepare("SELECT id FROM devices WHERE id = ? AND owner_id = ?").get(id, session.account.id);
         if (!owned) return json(response, 404, { error: "device-not-found" }, headers);

@@ -231,3 +231,7 @@ service remains the operator's responsibility.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for project guidelines. This project is
 licensed under the [MIT License](./LICENSE).
+
+## Plans and billing
+
+The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professional (€19) monthly plans, billed through Stripe Checkout. Monitoring and the activity monitor stay free; paid plans raise the paired-computer limit and unlock remote battery and power-profile commands. To enable billing on your own server set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/stripe/webhook` for `checkout.session.completed`, `customer.subscription.updated` and `customer.subscription.deleted`.

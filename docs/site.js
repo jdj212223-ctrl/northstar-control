@@ -179,6 +179,7 @@
       const session = await apiRequest("/api/auth/session");
       account = session.account;
       csrfToken = typeof session.csrfToken === "string" ? session.csrfToken : "";
+      renderPlans(session);
       apiStatus.textContent = "Connected securely to your Northstar service.";
       document.getElementById("remote-connection-title").textContent = account ? `Signed in as @${account.login}` : "Northstar service is ready · Sign in to view devices";
       document.getElementById("remote-connection-copy").textContent = account
@@ -236,6 +237,54 @@
     } catch (error) {
       deviceFlowId = "";
       document.getElementById("web-device-status").textContent = `Could not check sign-in: ${error.message}`;
+    }
+  }
+
+  function renderPlans(session) {
+    const grid = document.getElementById("plans-grid");
+    grid.replaceChildren();
+    const current = session.plan;
+    document.getElementById("plans-title").textContent = account
+      ? `You are on ${session.plans.find((plan) => plan.id === current)?.name || "Free"}`
+      : "Sign in to choose a plan";
+    document.getElementById("plans-copy").textContent = session.billingEnabled
+      ? "Payments are handled securely by Stripe."
+      : "Paid plans are not open yet.";
+    document.getElementById("manage-billing").hidden = !(account && current && current !== "free");
+    for (const plan of session.plans) {
+      const card = document.createElement("article");
+      card.className = "feature-card";
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = `${plan.name} · ${plan.priceCents ? `€${(plan.priceCents / 100).toFixed(0)}/mo` : "Free"}`;
+      const list = document.createElement("p");
+      list.textContent = plan.perks.join(" · ");
+      body.append(title, list);
+      if (plan.priceCents) {
+        const button = document.createElement("button");
+        button.className = "button button-primary";
+        button.type = "button";
+        button.textContent = plan.id === current ? "Current plan" : "Choose";
+        button.disabled = !account || !session.billingEnabled || current !== "free";
+        button.addEventListener("click", () => startBilling("/api/billing/checkout", { plan: plan.id }));
+        body.append(button);
+      }
+      card.append(body);
+      grid.append(card);
+    }
+  }
+
+  async function startBilling(route, body) {
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    try {
+      const result = await apiRequest(route, { method: "POST", body });
+      if (typeof result.url === "string" && /^https:\/\/(checkout|billing)\.stripe\.com\//.test(result.url) && tab) tab.location.href = result.url;
+      else if (tab) tab.close();
+    } catch (error) {
+      if (tab) tab.close();
+      document.getElementById("plans-title").textContent = error.message === "manage-existing-subscription"
+        ? "You already have a plan. Use Manage subscription." : "Could not open checkout. Try again.";
     }
   }
 
@@ -533,6 +582,7 @@
       saveStatus.textContent = "Could not reset preferences; browser storage is unavailable.";
     }
   });
+  document.getElementById("manage-billing").addEventListener("click", () => startBilling("/api/billing/portal", {}));
   document.getElementById("save-api-url").addEventListener("click", () => void saveApiUrl());
   apiInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") void saveApiUrl();
