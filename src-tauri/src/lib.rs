@@ -5,6 +5,7 @@ mod fan;
 mod github;
 mod helper;
 mod remote;
+mod isolate;
 mod ssd;
 mod store;
 mod system;
@@ -75,6 +76,11 @@ async fn system_status() -> Json {
 #[tauri::command]
 async fn system_activity() -> Result<Json, String> {
     activity::get_process_activity().await
+}
+
+#[tauri::command]
+async fn system_isolate() -> Json {
+    isolate::isolate().await
 }
 
 #[tauri::command]
@@ -318,6 +324,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             system_status,
             system_activity,
+            system_isolate,
             system_devices,
             set_power_profile,
             set_charge_limit,

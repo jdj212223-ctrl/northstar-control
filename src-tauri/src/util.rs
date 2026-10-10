@@ -120,3 +120,24 @@ pub fn config_dir() -> std::path::PathBuf {
     };
     base.unwrap_or_else(std::env::temp_dir).join("Northstar Control")
 }
+
+/// Per-process CPU% from `ps` on macOS/Linux. sysinfo's own per-process figure can read 0 on some systems.
+pub fn ps_cpu_map() -> Option<std::collections::HashMap<u32, f32>> {
+    if cfg!(windows) {
+        return None;
+    }
+    let out = std::process::Command::new("ps").args(["-Ao", "pid=,pcpu="]).output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let mut map = std::collections::HashMap::new();
+    for line in String::from_utf8_lossy(&out.stdout).lines() {
+        let mut parts = line.split_whitespace();
+        if let (Some(pid), Some(cpu)) = (parts.next(), parts.next()) {
+            if let (Ok(pid), Ok(cpu)) = (pid.parse::<u32>(), cpu.replace(',', ".").parse::<f32>()) {
+                map.insert(pid, cpu);
+            }
+        }
+    }
+    Some(map)
+}

@@ -255,6 +255,10 @@ The hosted service has Free, Plus (€2), Pro (€5), Max (€9) and Professiona
 - **Activity monitor**: filter, pause, usage bars, and real power draw (macOS with smctl).
 - Clock tuning / overclocking is still not offered: no safe, validated backend exists, and this app makes no clock or voltage changes.
 
+## Isolate (2.3)
+
+The Activity monitor has an **Isolate** button. It finds user apps hogging the CPU (8%+), skips the active app, the OS and Northstar, and lowers their priority (`renice 15` on macOS/Linux, BelowNormal on Windows) so the foreground and mouse stay smooth. On macOS/Linux the lowered priority lasts until those apps relaunch.
+
 ## Drive health (2.2)
 
 Reads the SSD's SMART counters through `smartctl` (smartmontools) and shows total data written, wear and estimated years left. The headline score (1–100) is the drive's own measured wear (100 − wear) whenever it reports one; the total bytes written is shown with a rough endurance estimate (typical ~600 TBW per TB of capacity), which is only used as the score when the drive reports no wear. Windows falls back to the storage reliability counters (wear only). Apple Silicon, NVMe and SATA SSDs are supported; hard disks are skipped.

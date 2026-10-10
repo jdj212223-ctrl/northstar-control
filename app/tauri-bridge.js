@@ -14,6 +14,7 @@
   window.northstar = Object.freeze({
     getSystemStatus: () => invoke("system_status"),
     getActivity: () => invoke("system_activity"),
+    isolate: () => invoke("system_isolate"),
     getDevices: () => invoke("system_devices"),
     setPowerProfile: (profile) => invoke("set_power_profile", { profile }),
     setChargeLimit: (enabled) => invoke("set_charge_limit", { enabled }),

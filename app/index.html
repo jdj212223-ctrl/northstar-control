@@ -13,6 +13,7 @@
     <script src="app.js" defer></script>
     <script src="bench.js" defer></script>
     <script src="ssd.js" defer></script>
+    <script src="isolate.js" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -145,8 +146,9 @@
         <section class="page-view detail-view" id="view-activity">
           <div class="page-heading">
             <div><div class="eyebrow"><span class="eyebrow-line"></span> LIVE PROCESS TELEMETRY</div><h1>See what’s <em>working.</em></h1><p class="page-subtitle">Rank applications by the resources your operating system reports.</p></div>
-            <button class="button button-secondary" id="activity-refresh"><span class="refresh-icon">↻</span> Refresh activity</button>
+            <div class="activity-actions"><button class="button" id="activity-isolate" type="button" title="Lower the priority of apps hogging the CPU so your active app stays smooth">⊘ Isolate</button><button class="button button-secondary" id="activity-refresh"><span class="refresh-icon">↻</span> Refresh activity</button></div>
           </div>
+          <p class="activity-capability-note" id="isolate-note" role="status">Isolate lowers the priority of apps hogging the CPU so your active app and mouse stay smooth. It never touches system processes.</p>
           <div class="activity-summary-grid">
             <article class="activity-summary-card"><span>CPU · iCPU / SoC</span><strong id="activity-cpu">—</strong><small>System-wide load</small></article>
             <article class="activity-summary-card unavailable"><span>GPU · iGPU / dGPU / SoC</span><strong>—</strong><small>Driver counter unavailable</small></article>
@@ -276,7 +278,7 @@
             <div class="safety-note settings-safety"><span>◇</span><p><strong>Safe by design.</strong> Unsupported hardware is reported as unavailable, never silently simulated as a successful system change.</p></div>
         </section>
 
-        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.2.2</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
+        <footer class="page-footer"><span>Northstar Control <span class="footer-separator">·</span> Desktop build 2.3.0</span><span>Designed to be clear. Built to be careful. <span class="footer-star">✳</span></span></footer>
       </main>
     </div>
 

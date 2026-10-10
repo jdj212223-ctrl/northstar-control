@@ -175,3 +175,5 @@ h2 { font: 700 18px var(--font); letter-spacing: -.3px; }
 .ssd-score span { color: var(--muted); font: 600 11px var(--mono); letter-spacing: 1.2px; }
 .ssd-track { flex: 1; height: 14px; border-radius: 10px; background: rgba(255, 255, 255, .08); overflow: hidden; }
 .ssd-track i { display: block; height: 100%; border-radius: 10px; background: var(--grad); transition: width .6s ease; }
+
+.activity-actions { display: flex; gap: 10px; flex-wrap: wrap; }

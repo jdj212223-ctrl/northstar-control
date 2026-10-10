@@ -26,8 +26,9 @@ fn sample() -> Json {
     }
     system.refresh_processes(ProcessesToUpdate::All, true);
 
+    let ps = crate::util::ps_cpu_map();
     let mut groups: HashMap<String, Group> = HashMap::new();
-    for process in system.processes().values() {
+    for (pid, process) in system.processes() {
         let name = process.name().to_string_lossy().into_owned();
         // Only the executable path is reported; command-line arguments can contain secrets.
         let command = process
@@ -42,7 +43,8 @@ fn sample() -> Json {
             memory: 0,
             count: 0,
         });
-        group.cpu += process.cpu_usage() as f64;
+        let cpu = ps.as_ref().and_then(|map| map.get(&pid.as_u32()).copied()).unwrap_or_else(|| process.cpu_usage());
+        group.cpu += cpu as f64;
         group.memory += process.memory();
         group.count += 1;
     }
@@ -95,6 +97,7 @@ pub async fn get_process_activity() -> Result<Json, String> {
 
 #[cfg(test)]
 mod tests {
+
     #[test]
     fn timestamp_has_iso_shape() {
         let text = super::chrono_like_now();
