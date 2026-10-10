@@ -264,7 +264,17 @@ async function cpuLoadPercent() {
   return total ? Math.max(0, Math.min(100, Math.round((1 - idle / total) * 100))) : null;
 }
 
-async function getSystemStatus() {
+let statusCache = { at: 0, pending: null };
+
+// Share one sample between the UI and the remote agent so hardware probes are not spawned repeatedly.
+function getSystemStatus() {
+  if (statusCache.pending && Date.now() - statusCache.at < 8000) return statusCache.pending;
+  statusCache = { at: Date.now(), pending: readSystemStatus() };
+  statusCache.pending.catch(() => { statusCache = { at: 0, pending: null }; });
+  return statusCache.pending;
+}
+
+async function readSystemStatus() {
   const macHelper = createMacHardwareHelper();
   const [battery, sensors, powerProfile, cpuLoad, hardwareControls] = await Promise.all([
     readBattery(),

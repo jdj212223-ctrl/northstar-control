@@ -182,7 +182,7 @@ function createRemoteAgent({
     currentSocket.on("open", () => {
       reconnectDelay = 1000;
       sendTelemetry();
-      telemetryTimer = setInterval(sendTelemetry, 10000);
+      telemetryTimer = setInterval(sendTelemetry, 30000);
       notifyStatus();
     });
     currentSocket.on("message", (raw) => {

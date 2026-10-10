@@ -816,11 +816,13 @@
     refreshDevices();
     loadGitHubStatus();
     refreshRemoteStatus();
-    window.setInterval(refreshStatus, 10000);
-    window.setInterval(refreshRemoteStatus, 5000);
+    // Skip all background polling while the window is hidden so Northstar stays idle and quiet.
+    window.setInterval(() => { if (!document.hidden) refreshStatus(); }, 15000);
+    window.setInterval(() => { if (!document.hidden) refreshRemoteStatus(); }, 10000);
     window.setInterval(() => {
-      if (document.getElementById("view-activity").classList.contains("active")) refreshActivity();
-    }, 5000);
+      if (!document.hidden && document.getElementById("view-activity").classList.contains("active")) refreshActivity();
+    }, 10000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshStatus(); });
   } else {
     document.getElementById("app-state").textContent = "DESKTOP APP REQUIRED";
     document.getElementById("connection-label").textContent = "Desktop app required";
